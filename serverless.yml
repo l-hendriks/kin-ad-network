@@ -31,11 +31,11 @@ custom:
 #            - "/*"
 
 functions:
-  handler:
-    handler: handler.default
+  ironsource_callback:
+    handler: ironsource.default
     events:
       - http:
-          path: test
+          path: ironsource
           method: get
 
 # you can add CloudFormation resource templates here
