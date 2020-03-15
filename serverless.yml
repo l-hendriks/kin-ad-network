@@ -1,4 +1,4 @@
-service: # CHANGE ME
+service: kin-ad-network
 
 plugins:
   - serverless-plugin-typescript
