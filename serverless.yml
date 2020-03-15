@@ -32,7 +32,7 @@ custom:
 
 functions:
   ironsource_callback:
-    handler: ironsource.default
+    handler: handlers/ironsource.default
     events:
       - http:
           path: ironsource
