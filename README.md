@@ -54,3 +54,9 @@ can monitor this. If it is found, the callback is always called with the followi
 
 `success` is true if all checks passed and false if something went wrong. You do not get feedback on what
 went wrong.
+
+## Pricing
+
+Running this has a fixed cost and a per-request cost. The costs are calculated per environment.
+The fixed cost is $0.40 per month for the secrets manager. The per-request cost is roughly $5 per one
+million ad calls. There is no scalability limit.
