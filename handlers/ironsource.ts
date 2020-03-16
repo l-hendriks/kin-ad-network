@@ -20,6 +20,23 @@ const getClient = async (clientId: string): Promise<Client> => {
     return DynamoDB.Converter.unmarshall(Items[0]) as Client;
 };
 
+const isEventAlreadySent = async (clientId: string, eventId: string): Promise<boolean> => {
+    const ddb = new DynamoDB({ region: process.env.REGION });
+    const { Items } = await ddb.query({
+        ExpressionAttributeNames: { '#clientId': 'clientId', '#eventId': 'eventId' },
+        ExpressionAttributeValues: { ':clientId': { S: clientId }, ':eventId': { S: eventId } },
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        TableName: process.env.EVENTS_TABLE_NAME!,
+        KeyConditionExpression: '#clientId = :clientId AND #eventId = :eventId',
+    }).promise();
+
+    if (!Items || Items.length === 0) {
+        return false;
+    }
+
+    return true;
+};
+
 const saveEvent = (
     clientId: string,
     eventId: string,
@@ -92,6 +109,12 @@ const ironsourceCallback = async (
     }
 
     if (!checkSignature(timestamp, eventId, userId, rewards, signature)) {
+        await fetch(`${client.callbackUrl}?eventId=${eventId}&rewards=${rewards}&timestamp=${timestamp}&userId=${userId}&success=false`);
+        return returnMessage(eventId);
+    }
+
+    // Check if event was already sent before
+    if (await isEventAlreadySent(clientId, eventId)) {
         await fetch(`${client.callbackUrl}?eventId=${eventId}&rewards=${rewards}&timestamp=${timestamp}&userId=${userId}&success=false`);
         return returnMessage(eventId);
     }
