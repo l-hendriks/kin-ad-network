@@ -31,7 +31,9 @@
     "typescript-eslint": "^0.0.1-alpha.0"
   },
   "dependencies": {
-    "request": "^2.88.2"
+    "@types/node-fetch": "^2.5.5",
+    "aws-sdk": "^2.639.0",
+    "node-fetch": "^2.6.0"
   },
   "scripts": {
     "lint": "./node_modules/eslint/bin/eslint.js . --ext .ts",

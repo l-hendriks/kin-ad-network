@@ -9,26 +9,34 @@ provider:
   region: eu-central-1
   stage: ${opt:stage, 'dev'}
   environment:
-    TESTKEY: ${self:custom.credentials.testkey}
+    REGION: ${self:provider.region}
+    CLIENT_TABLE_NAME: ${self:provider.stage}-clients
+    EVENTS_TABLE_NAME: ${self:provider.stage}-events
+    IRONSOURCE_PRIVATE_KEY: ${self:custom.credentials.IRONSOURCE_PRIVATE_KEY}
+  stackPolicy:
+    - { Effect: Allow, Principal: "*", Action: "Update:*", Resource: "*"}
+    - Effect: Deny
+      Principal: "*"
+      Action: ["Update:Replace", "Update:Delete"]
+      Resource: LogicalResourceId/DynamoDBClientsTable
+    - Effect: Deny
+      Principal: "*"
+      Action: ["Update:Replace", "Update:Delete"]
+      Resource: LogicalResourceId/DynamoDBEventsTable
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+      - dynamodb:Query
+      Resource:
+        - { "Fn::Join" : [ "", [ { "Fn::GetAtt": ["DynamoDBClientsTable", "Arn"] }, "*" ] ] }
+    - Effect: Allow
+      Action:
+      - dynamodb:UpdateItem
+      Resource:
+        - { "Fn::Join" : [ "", [ { "Fn::GetAtt": ["DynamoDBEventsTable", "Arn"] }, "*" ] ] }
 
 custom:
   credentials: ${ssm:/aws/reference/secretsmanager/${self:provider.stage}~true}
-
-# you can add statements to the Lambda function's IAM Role here
-#  iamRoleStatements:
-#    - Effect: "Allow"
-#      Action:
-#        - "s3:ListBucket"
-#      Resource: { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ServerlessDeploymentBucket" } ] ]  }
-#    - Effect: "Allow"
-#      Action:
-#        - "s3:PutObject"
-#      Resource:
-#        Fn::Join:
-#          - ""
-#          - - "arn:aws:s3:::"
-#            - "Ref" : "ServerlessDeploymentBucket"
-#            - "/*"
 
 functions:
   ironsource_callback:
@@ -38,14 +46,36 @@ functions:
           path: ironsource
           method: get
 
-# you can add CloudFormation resource templates here
-#resources:
-#  Resources:
-#    NewResource:
-#      Type: AWS::S3::Bucket
-#      Properties:
-#        BucketName: my-new-bucket
-#  Outputs:
-#     NewOutput:
-#       Description: "Description for the output"
-#       Value: "Some output value"
+resources:
+ Resources:
+  DynamoDBClientsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ${self:provider.stage}-clients
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      AttributeDefinitions:
+        - AttributeName: "clientId"
+          AttributeType: S
+      KeySchema:
+        - AttributeName: "clientId"
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+  DynamoDBEventsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ${self:provider.stage}-events
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      AttributeDefinitions:
+        - AttributeName: "clientId"
+          AttributeType: S
+        - AttributeName: "eventId"
+          AttributeType: S
+      KeySchema:
+        - AttributeName: "clientId"
+          KeyType: HASH
+        - AttributeName: "eventId"
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
