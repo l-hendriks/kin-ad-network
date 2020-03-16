@@ -44,7 +44,7 @@ const saveEvent = (
     timestamp: string,
     userId: string,
 ): Promise<unknown> => {
-    const ddb = new DynamoDB({ region: process.env.AWS_REGION });
+    const ddb = new DynamoDB({ region: process.env.REGION });
     return ddb.updateItem({
         Key: {
             clientId: { S: clientId },
