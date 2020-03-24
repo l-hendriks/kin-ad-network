@@ -3,6 +3,22 @@ import { DynamoDB } from 'aws-sdk';
 import fetch from 'node-fetch';
 import { LambdaResponse, IronSourceCallback, Client } from '../constants';
 
+// From https://developers.ironsrc.com/ironsource-mobile-general/handling-server-to-server-callback-events/
+const VALID_IP = [
+    '79.125.5.179',
+    '79.125.26.193',
+    '79.125.117.130',
+    '176.34.224.39',
+    '176.34.224.41',
+    '176.34.224.49',
+    '34.194.180.125',
+    '34.196.56.165',
+    '34.196.251.81',
+    '34.196.253.23',
+    '54.88.253.218',
+    '54.209.185.78',
+];
+
 const getClient = async (clientId: string): Promise<Client> => {
     const ddb = new DynamoDB({ region: process.env.REGION });
     const { Items } = await ddb.query({
@@ -86,16 +102,25 @@ const returnMessage = (eventId: string): LambdaResponse => ({
 });
 
 const ironsourceCallback = async (
-    { queryStringParameters }: IronSourceCallback,
+    event: IronSourceCallback,
 ): Promise<LambdaResponse> => {
     const {
-        custom_clientId: clientId,
+        appKey: clientId,
         eventId,
         rewards,
         signature,
         timestamp,
         userId,
-    } = queryStringParameters;
+    } = event.queryStringParameters;
+
+    // CHeck source ip
+    const { sourceIp } = event.requestContext.identity;
+    if (!VALID_IP.includes(sourceIp)) {
+        // Log error in cloudwatch
+        // eslint-disable-next-line no-console
+        console.log(`ERROR: incorrect source ip: ${sourceIp}`);
+        return returnMessage(eventId);
+    }
 
     // Get callback url using clientId
     let client: Client;
@@ -109,13 +134,17 @@ const ironsourceCallback = async (
     }
 
     if (!checkSignature(timestamp, eventId, userId, rewards, signature)) {
-        await fetch(`${client.callbackUrl}?eventId=${eventId}&rewards=${rewards}&timestamp=${timestamp}&userId=${userId}&success=false`);
+        // Log error in cloudwatch
+        // eslint-disable-next-line no-console
+        console.log(`ERROR: Signature did not match for event ${eventId} with client ${clientId}`);
         return returnMessage(eventId);
     }
 
     // Check if event was already sent before
     if (await isEventAlreadySent(clientId, eventId)) {
-        await fetch(`${client.callbackUrl}?eventId=${eventId}&rewards=${rewards}&timestamp=${timestamp}&userId=${userId}&success=false`);
+        // Log error in cloudwatch
+        // eslint-disable-next-line no-console
+        console.log(`ERROR: Event already sent for event ${eventId} with client ${clientId}`);
         return returnMessage(eventId);
     }
 

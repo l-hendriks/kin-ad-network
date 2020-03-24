@@ -1,13 +1,18 @@
 export interface IronSourceCallback {
     queryStringParameters: {
-      country: string;
-      custom_clientId: string; // eslint-disable-line camelcase
-      eventId: string;
-      publisherSubId: string;
-      rewards: string;
-      signature: string;
-      timestamp: string;
-      userId: string;
+        appKey: string;
+        country: string;
+        eventId: string;
+        publisherSubId: string;
+        rewards: string;
+        signature: string;
+        timestamp: string;
+        userId: string;
+    };
+    requestContext: {
+        identity: {
+            sourceIp: string;
+        };
     };
 }
 
