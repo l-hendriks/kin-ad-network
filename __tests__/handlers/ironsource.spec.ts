@@ -68,7 +68,6 @@ describe('ironsource callback', () => {
         const result = await ironsource({
             queryStringParameters: {
                 country: '',
-                // eslint-disable-next-line @typescript-eslint/camelcase
                 appKey: 'clientId',
                 eventId: 'eventId',
                 publisherSubId: '',
@@ -90,7 +89,6 @@ describe('ironsource callback', () => {
         const result = await ironsource({
             queryStringParameters: {
                 country: '',
-                // eslint-disable-next-line @typescript-eslint/camelcase
                 appKey: 'clientId',
                 eventId: 'eventId',
                 publisherSubId: '',
@@ -112,7 +110,6 @@ describe('ironsource callback', () => {
         const result = await ironsource({
             queryStringParameters: {
                 country: '',
-                // eslint-disable-next-line @typescript-eslint/camelcase
                 appKey: 'clientId',
                 eventId: 'eventId',
                 publisherSubId: '',
@@ -134,7 +131,6 @@ describe('ironsource callback', () => {
         const result = await ironsource({
             queryStringParameters: {
                 country: '',
-                // eslint-disable-next-line @typescript-eslint/camelcase
                 appKey: 'clientId',
                 eventId: 'eventId',
                 publisherSubId: '',
@@ -156,7 +152,6 @@ describe('ironsource callback', () => {
         const result = await ironsource({
             queryStringParameters: {
                 country: '',
-                // eslint-disable-next-line @typescript-eslint/camelcase
                 appKey: 'clientId',
                 eventId: 'eventId',
                 publisherSubId: '',
@@ -178,7 +173,6 @@ describe('ironsource callback', () => {
         const result = await ironsource({
             queryStringParameters: {
                 country: '',
-                // eslint-disable-next-line @typescript-eslint/camelcase
                 appKey: 'clientId',
                 eventId: 'eventId',
                 publisherSubId: '',
