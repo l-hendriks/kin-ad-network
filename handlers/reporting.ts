@@ -120,7 +120,8 @@ const reporting = async (): Promise<void> => {
 
         // Add eCPM to save averages in database
         reportsByAdNetwork[i].forEach((appReport) => {
-            eCPMs[appReport.appKey] = [].concat(appReport.data.map((data) => data.eCPM));
+            eCPMs[appReport.appKey] = ([] as number[])
+                .concat(appReport.data.map((data) => data.eCPM));
         });
     });
 
