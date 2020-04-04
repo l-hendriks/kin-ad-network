@@ -152,7 +152,7 @@ const ironsourceCallback = async (
     await saveEvent(clientId, eventId, rewards, timestamp, userId);
 
     // Send callback to client
-    await fetch(`${client.callbackUrl}?eventId=${eventId}&rewards=${rewards}&timestamp=${timestamp}&userId=${userId}&success=true`);
+    await fetch(`${client.callbackUrl}?eventId=${eventId}&rewards=${rewards}&timestamp=${timestamp}&userId=${userId}`);
     return returnMessage(eventId);
 };
 

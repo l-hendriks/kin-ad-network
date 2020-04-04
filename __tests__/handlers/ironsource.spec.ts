@@ -62,7 +62,7 @@ describe('ironsource callback', () => {
         });
 
         nock('http://someurl.com')
-            .get('/?eventId=eventId&rewards=10&timestamp=123123&userId=userId&success=true')
+            .get('/?eventId=eventId&rewards=10&timestamp=123123&userId=userId')
             .reply(200);
 
         const result = await ironsource({

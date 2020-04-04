@@ -37,6 +37,8 @@
   "dependencies": {
     "@types/node-fetch": "^2.5.5",
     "aws-sdk": "^2.639.0",
+    "google-spreadsheet": "^3.0.10",
+    "moment": "^2.24.0",
     "node-fetch": "^2.6.0"
   },
   "scripts": {

@@ -13,6 +13,10 @@ provider:
     CLIENT_TABLE_NAME: ${self:provider.stage}-clients
     EVENTS_TABLE_NAME: ${self:provider.stage}-events
     IRONSOURCE_PRIVATE_KEY: ${self:custom.credentials.IRONSOURCE_PRIVATE_KEY}
+    IRONSOURCE_SECRET_KEY: ${self:custom.credentials.IRONSOURCE_SECRET_KEY}
+    IRONSOURCE_REFRESH_TOKEN: ${self:custom.credentials.IRONSOURCE_REFRESH_TOKEN}
+    GOOGLE_CREDENTIALS_JSON:  ${self:custom.credentials.GOOGLE_CREDENTIALS_JSON}
+    GOOGLE_SHEET_ID:  ${self:custom.credentials.GOOGLE_SHEET_ID}
   stackPolicy:
     - { Effect: Allow, Principal: "*", Action: "Update:*", Resource: "*"}
     - Effect: Deny
@@ -46,6 +50,8 @@ functions:
       - http:
           path: ironsource
           method: get
+  reporting:
+    handler: handlers/reporting.default
 
 resources:
  Resources:
