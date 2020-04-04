@@ -2,7 +2,7 @@
 import { DynamoDB } from 'aws-sdk';
 import fetch from 'node-fetch';
 import { GoogleSpreadsheet } from 'google-spreadsheet';
-import * as moment from 'moment';
+import moment from 'moment-es6';
 import { Doc, Sheet, IronSourceReport } from '../constants';
 
 const IRONSOURCE_AUTH_URL = 'https://platform.ironsrc.com/partners/publisher/auth';
@@ -120,11 +120,7 @@ const reporting = async (): Promise<void> => {
 
         // Add eCPM to save averages in database
         reportsByAdNetwork[i].forEach((appReport) => {
-            if (!eCPMs[appReport.appKey]) {
-                eCPMs[appReport.appKey] = [] as number[];
-            }
-            eCPMs[appReport.appKey] = eCPMs[appReport.appKey]
-                .concat(appReport.data.map((data) => data.eCPM));
+            eCPMs[appReport.appKey] = [].concat(appReport.data.map((data) => data.eCPM));
         });
     });
 

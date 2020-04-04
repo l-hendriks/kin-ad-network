@@ -40,7 +40,7 @@ const getECPM = async (clientId: string, date: string): Promise<ECPM|undefined> 
     return DynamoDB.Converter.unmarshall(Items[0]) as ECPM;
 };
 
-const ironsourceCallback = async (
+const eCPM = async (
     event: ECPMEvent,
 ): Promise<LambdaResponse> => {
     const {
@@ -54,9 +54,6 @@ const ironsourceCallback = async (
     try {
         client = await getClient(appKey);
     } catch (e) {
-        // Log error in cloudwatch
-        // eslint-disable-next-line no-console
-        console.log(`ERROR: ${e}`);
         return {
             statusCode: 400,
             body: JSON.stringify({ error: 'Incorrect client' }),
@@ -85,4 +82,4 @@ const ironsourceCallback = async (
     };
 };
 
-export default ironsourceCallback;
+export default eCPM;
