@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
+import { DynamoDB } from 'aws-sdk';
 import fetch from 'node-fetch';
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 import * as moment from 'moment';
@@ -65,6 +66,37 @@ const getYesterdayReport = async (
     return res.json();
 };
 
+const loadGoogleSheet = async (): Promise<Record<string, Sheet>> => {
+    const creds = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON!);
+    const doc: Doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEET_ID!);
+    await doc.useServiceAccountAuth(creds);
+    await doc.loadInfo();
+
+    return loadAllSheets(doc);
+};
+
+const saveeCPMs = async (date: string, eCPMs: Record<string, number[]>): Promise<void> => {
+    const ddb = new DynamoDB({ region: process.env.REGION });
+
+    Object.entries(eCPMs).forEach(async ([app, eCPM]) => {
+        const average = eCPM.reduce((sum, val) => sum + val, 0) / eCPM.length;
+
+        await ddb.updateItem({
+            Key: {
+                clientId: { S: app },
+                date: { S: date },
+            },
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            TableName: process.env.ECPM_TABLE_NAME!,
+            UpdateExpression: 'SET #eCPM = :eCPM',
+            ExpressionAttributeNames: { '#eCPM': 'eCPM' },
+            ExpressionAttributeValues: DynamoDB.Converter.marshall({
+                ':eCPM': average,
+            }),
+        }).promise();
+    }, {});
+};
+
 const reporting = async (): Promise<void> => {
     const startDate = moment().subtract(1, 'day').startOf('day').format('YYYY-MM-DD');
     const endDate = moment().subtract(1, 'day').endOf('day').format('YYYY-MM-DD');
@@ -76,20 +108,27 @@ const reporting = async (): Promise<void> => {
         ),
     );
 
-    const creds = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON!);
-    const doc: Doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEET_ID!);
-    await doc.useServiceAccountAuth(creds);
-    await doc.loadInfo();
-
-    const sheets = await loadAllSheets(doc);
-
+    const sheets = await loadGoogleSheet();
+    const eCPMs = {};
     AD_NETWORKS.forEach(async (adNetwork, i) => {
-        const report = {
+        // Add row to google sheets
+        const report = parseReport(reportsByAdNetwork[i]);
+        sheets[adNetwork].addRow({
             Date: startDate,
-            ...parseReport(reportsByAdNetwork[i]),
-        };
-        sheets[adNetwork].addRow(report);
+            ...report,
+        });
+
+        // Add eCPM to save averages in database
+        reportsByAdNetwork[i].forEach((appReport) => {
+            if (!eCPMs[appReport.appKey]) {
+                eCPMs[appReport.appKey] = [] as number[];
+            }
+            eCPMs[appReport.appKey] = eCPMs[appReport.appKey]
+                .concat(appReport.data.map((data) => data.eCPM));
+        });
     });
+
+    await saveeCPMs(startDate, eCPMs);
 };
 
 export default reporting;

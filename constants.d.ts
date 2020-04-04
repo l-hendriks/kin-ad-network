@@ -16,6 +16,14 @@ export interface IronSourceCallback {
     };
 }
 
+export interface ECPMEvent {
+    queryStringParameters: {
+        appKey: string;
+        date: string;
+        secret: string;
+    };
+}
+
 export interface LambdaResponse {
     statusCode: number;
     body: string;
@@ -24,6 +32,13 @@ export interface LambdaResponse {
 export interface Client {
     clientId: string;
     callbackUrl: string;
+    secret: string;
+}
+
+export interface ECPM {
+    clientId: string;
+    date: string;
+    eCPM: number;
 }
 
 // google-spreadsheet typings not yet available, so custom interfaces for now

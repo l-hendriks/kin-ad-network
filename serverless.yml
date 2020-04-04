@@ -12,6 +12,7 @@ provider:
     REGION: ${self:provider.region}
     CLIENT_TABLE_NAME: ${self:provider.stage}-clients
     EVENTS_TABLE_NAME: ${self:provider.stage}-events
+    ECPM_TABLE_NAME: ${self:provider.stage}-eCPM
     IRONSOURCE_PRIVATE_KEY: ${self:custom.credentials.IRONSOURCE_PRIVATE_KEY}
     IRONSOURCE_SECRET_KEY: ${self:custom.credentials.IRONSOURCE_SECRET_KEY}
     IRONSOURCE_REFRESH_TOKEN: ${self:custom.credentials.IRONSOURCE_REFRESH_TOKEN}
@@ -27,6 +28,10 @@ provider:
       Principal: "*"
       Action: ["Update:Replace", "Update:Delete"]
       Resource: LogicalResourceId/DynamoDBEventsTable
+    - Effect: Deny
+      Principal: "*"
+      Action: ["Update:Replace", "Update:Delete"]
+      Resource: LogicalResourceId/DynamoDBECPMTable
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -39,6 +44,12 @@ provider:
       - dynamodb:UpdateItem
       Resource:
         - { "Fn::Join" : [ "", [ { "Fn::GetAtt": ["DynamoDBEventsTable", "Arn"] }, "*" ] ] }
+    - Effect: Allow
+      Action:
+      - dynamodb:Query
+      - dynamodb:UpdateItem
+      Resource:
+        - { "Fn::Join" : [ "", [ { "Fn::GetAtt": ["DynamoDBECPMTable", "Arn"] }, "*" ] ] }
 
 custom:
   credentials: ${ssm:/aws/reference/secretsmanager/${self:provider.stage}~true}
@@ -52,6 +63,14 @@ functions:
           method: get
   reporting:
     handler: handlers/reporting.default
+    events:
+      - schedule: cron(0 18 * * ? *) # Every day at 6:00PM UTC
+  eCPM:
+    handler: handlers/eCPM.default
+    events:
+      - http:
+          path: eCPM
+          method: get
 
 resources:
  Resources:
@@ -84,5 +103,23 @@ resources:
         - AttributeName: "clientId"
           KeyType: HASH
         - AttributeName: "eventId"
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+
+  DynamoDBECPMTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ${self:provider.stage}-eCPM
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      AttributeDefinitions:
+        - AttributeName: "clientId"
+          AttributeType: S
+        - AttributeName: "date"
+          AttributeType: S
+      KeySchema:
+        - AttributeName: "clientId"
+          KeyType: HASH
+        - AttributeName: "date"
           KeyType: RANGE
       BillingMode: PAY_PER_REQUEST
