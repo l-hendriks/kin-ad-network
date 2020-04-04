@@ -23,7 +23,7 @@ const getClient = async (clientId: string): Promise<Client> => {
     return DynamoDB.Converter.unmarshall(Items[0]) as Client;
 };
 
-const getECPM = async (clientId: string, date: string): Promise<ECPM> => {
+const getECPM = async (clientId: string, date: string): Promise<ECPM|undefined> => {
     const ddb = new DynamoDB({ region: process.env.REGION });
     const { Items } = await ddb.query({
         ExpressionAttributeNames: { '#clientId': 'clientId', '#date': 'date' },
