@@ -1,15 +1,22 @@
-# Kin Ads Network IronSource Connector
+# Kin Ads Network
 
-This serverless function acts as a proxy between IronSource and the apps that are part of the Kin Ads network.
-The goal of this function is to receive all IronSource callbacks and route them to the correct app, while keeping
-a record of the event in a serverless database. This database will be used for realtime tracking, and for
-duplicate event detection.
+This repository contains the infrastructure and the codebase for the Kin Ads Network. There are three
+main functionalities in this repository:
+
+1.  A proxy between IronSource and the integrating app. It does a few security checks, save the events
+    in a database and if it's a valid ad watch event, calls the app's server callback.
+2.  A daily cron job that saves revenue per app and per ad network in a Google Sheet, so apps can be
+    compensated correctly.
+3.  An API that returns the average eCPM of an app for a specific day.
 
 ## How to use this as an app developer
 
-Very simple! Integrate the IronSource SDK in your app per the instruction. As well as the required parameters,
-send a custom variable called `clientId` with every request. Without this, the network doesn't know which
-app the reward should be attributed to.
+Very simple! Integrate the IronSource SDK in your app per the instruction. Then, notify us with your
+server callback. We will send you a secret key to access the eCPM API.
+
+### eCPM API
+
+The eCPM API can be accessed at https://api.kinads.org/eCPM?date=DATE&appKey=APPKEY&secret=YOUR_SECRET.
 
 ## How to run this as a developer
 
@@ -20,13 +27,14 @@ app the reward should be attributed to.
 To deploy the app, run `serverless deploy`. It will create an application in your linked AWS account on the
 development stage. Refer to serverless docs for more information on deploying.
 
-Deploying this app will automatically create 2 DynamoDB tables: clients and events. Clients link `clientId`s
+Deploying this app will automatically create 3 DynamoDB tables: clients, eCPMs and events. Clients link `clientId`s
 to `callbackUrl`s. The events database is a database that saves all events that come through. A future 
-possibility is to remove these after x days if the table becomes too big.
+possibility is to remove these after x days if the table becomes too big and costly.
 
 ## Security measures
 
-Two security measures have been implemented:
+As you can see in the codebase, all environment variables are stored in the AWS Secrets Manager.
+Three security measures have been implemented for the Ironsouce proxy function.
 
 ### Signature calculation
 
@@ -45,18 +53,7 @@ to have get a link of a video reward, you cannot run it again and get the reward
 to generate new links that generate valid rewards (because you need to calculate the signature), you cannot
 generate reward links without the secret nor reuse ones that were valid at some point.
 
-## Callback response
+### Source IP restriction
 
-If the `clientId` cannot be found, we log an error in AWS CloudWatch with the clientId in there so we
-can monitor this. If it is found, the callback is always called with the following url:
+Only calls that originate from IronSource.
 
-`CALLBACK?eventId=EVENT_ID&rewards=REWARDS&timestamp=TIMESTAMP&userId=USER_ID&success=SUCCESS`
-
-`success` is true if all checks passed and false if something went wrong. You do not get feedback on what
-went wrong.
-
-## Pricing
-
-Running this has a fixed cost and a per-request cost. The costs are calculated per environment.
-The fixed cost is $0.40 per month for the secrets manager. The per-request cost is roughly $5 per one
-million ad calls. There is no scalability limit.
