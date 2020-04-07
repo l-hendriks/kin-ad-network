@@ -1,4 +1,4 @@
-import { createHash } from 'crypto';
+import { createHash, createHmac } from 'crypto';
 import { DynamoDB } from 'aws-sdk';
 import fetch from 'node-fetch';
 import { LambdaResponse, IronSourceCallback, Client } from '../constants';
@@ -151,8 +151,13 @@ const ironsourceCallback = async (
     // Add to events database for realtime tracking
     await saveEvent(clientId, eventId, rewards, timestamp, userId);
 
+    // Calculate signature for sending to app
+    const returnSignature = createHmac('sha256', client.signatureSecret)
+        .update(`${clientId}${eventId}${userId}${timestamp}`)
+        .digest('hex');
+
     // Send callback to client
-    await fetch(`${client.callbackUrl}?eventId=${eventId}&rewards=${rewards}&timestamp=${timestamp}&userId=${userId}`);
+    await fetch(`${client.callbackUrl}?eventId=${eventId}&rewards=${rewards}&timestamp=${timestamp}&userId=${userId}&signature=${returnSignature}`);
     return returnMessage(eventId);
 };
 

@@ -33,6 +33,7 @@ export interface Client {
     clientId: string;
     callbackUrl: string;
     secret: string;
+    signatureSecret: string;
 }
 
 export interface ECPM {

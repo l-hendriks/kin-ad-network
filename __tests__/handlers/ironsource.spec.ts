@@ -38,7 +38,7 @@ describe('ironsource callback', () => {
     });
 
     it('should save the event and send success callback', async () => {
-        mockQuery([DynamoDB.Converter.marshall({ callbackUrl: 'http://someurl.com', clientId: 'testClient' })], undefined);
+        mockQuery([DynamoDB.Converter.marshall({ callbackUrl: 'http://someurl.com', clientId: 'testClient', signatureSecret: 'secret' })], undefined);
         AWS.mock('DynamoDB', 'updateItem', (params: unknown, cb: () => unknown) => {
             expect(params).toEqual({
                 ExpressionAttributeNames: {
@@ -62,7 +62,7 @@ describe('ironsource callback', () => {
         });
 
         nock('http://someurl.com')
-            .get('/?eventId=eventId&rewards=10&timestamp=123123&userId=userId')
+            .get('/?eventId=eventId&rewards=10&timestamp=123123&userId=userId&signature=52df893c0ebcd0039d76d683f08275f8b34bfd05975e171ec86b217e046ca364')
             .reply(200);
 
         const result = await ironsource({
@@ -84,7 +84,7 @@ describe('ironsource callback', () => {
     });
 
     it('should not save the event and send success callback when event already saved', async () => {
-        mockQuery([DynamoDB.Converter.marshall({ callbackUrl: 'http://someurl.com', clientId: 'testClient' })], [{ x: { N: '1' } }]);
+        mockQuery([DynamoDB.Converter.marshall({ callbackUrl: 'http://someurl.com', clientId: 'testClient', signatureSecret: 'secret' })], [{ x: { N: '1' } }]);
 
         const result = await ironsource({
             queryStringParameters: {
@@ -147,7 +147,7 @@ describe('ironsource callback', () => {
     });
 
     it('should not save the event and send success callback when signature is incorrect', async () => {
-        mockQuery([DynamoDB.Converter.marshall({ callbackUrl: 'http://someurl.com', clientId: 'testClient' })], undefined);
+        mockQuery([DynamoDB.Converter.marshall({ callbackUrl: 'http://someurl.com', clientId: 'testClient', signatureSecret: 'secret' })], undefined);
 
         const result = await ironsource({
             queryStringParameters: {
@@ -168,7 +168,7 @@ describe('ironsource callback', () => {
     });
 
     it('should not save the event and send success callback when source ip incorrect', async () => {
-        mockQuery([DynamoDB.Converter.marshall({ callbackUrl: 'http://someurl.com', clientId: 'testClient' })], undefined);
+        mockQuery([DynamoDB.Converter.marshall({ callbackUrl: 'http://someurl.com', clientId: 'testClient', signatureSecret: 'secret' })], undefined);
 
         const result = await ironsource({
             queryStringParameters: {
