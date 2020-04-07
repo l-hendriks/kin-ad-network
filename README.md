@@ -14,6 +14,21 @@ main functionalities in this repository:
 Very simple! Integrate the IronSource SDK in your app per the instruction. Then, notify us with your
 server callback. We will send you a secret key to access the eCPM API.
 
+### Security
+
+Make sure your server callback is secure. There are a couple of things to take into consideration:
+
+1.  Of course, the server callback should be secret (not exposed from the app for example)
+2.  The callback contains a signature you can recreate on your end. The signature is calculated as a
+    HMAC-sha256 with a secret key as the password (we will provide this you), with the body:
+    `${clientId}${eventId}${userId}${timestamp}`, which are provided in the callback
+3.  Make sure you don't allow double earns by saving the eventId in a database and checking this
+    eventId is not used before.
+
+With these measures, even if someone finds out your server callback, they cannot re-earn using the
+same url and they cannot generate new urls because they don't have the secret to generate
+valid signatures.
+
 ### eCPM API
 
 The eCPM API can be accessed at https://api.kinads.org/eCPM?date=DATE&appKey=APPKEY&secret=YOUR_SECRET.
