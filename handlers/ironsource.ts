@@ -114,11 +114,11 @@ const ironsourceCallback = async (
     } = event.queryStringParameters;
 
     // CHeck source ip
-    const { sourceIp } = event.requestContext.identity;
-    if (!VALID_IP.includes(sourceIp)) {
+    const firstForwardedFor = event.headers['X-Forwarded-For'].split(',')[0].trim();
+    if (!VALID_IP.includes(firstForwardedFor)) {
         // Log error in cloudwatch
         // eslint-disable-next-line no-console
-        console.log(`ERROR: incorrect source ip: ${sourceIp}`);
+        console.log(`ERROR: incorrect source ip: ${firstForwardedFor}`);
         return returnMessage(eventId);
     }
 

@@ -9,10 +9,8 @@ export interface IronSourceCallback {
         timestamp: string;
         userId: string;
     };
-    requestContext: {
-        identity: {
-            sourceIp: string;
-        };
+    headers: {
+        'X-Forwarded-For': string;
     };
 }
 

@@ -76,7 +76,7 @@ describe('ironsource callback', () => {
                 timestamp: '123123',
                 userId: 'userId',
             },
-            requestContext: { identity: { sourceIp: '79.125.5.179' } },
+            headers: { 'X-Forwarded-For': '79.125.5.179' },
         });
 
         expect(result).toEqual({ statusCode: 200, body: 'eventId:OK' });
@@ -97,7 +97,7 @@ describe('ironsource callback', () => {
                 timestamp: '123123',
                 userId: 'userId',
             },
-            requestContext: { identity: { sourceIp: '79.125.5.179' } },
+            headers: { 'X-Forwarded-For': '79.125.5.179' },
         });
 
         expect(result).toEqual({ statusCode: 200, body: 'eventId:OK' });
@@ -118,7 +118,7 @@ describe('ironsource callback', () => {
                 timestamp: '123123',
                 userId: 'userId',
             },
-            requestContext: { identity: { sourceIp: '79.125.5.179' } },
+            headers: { 'X-Forwarded-For': '79.125.5.179' },
         });
 
         expect(result).toEqual({ statusCode: 200, body: 'eventId:OK' });
@@ -139,7 +139,7 @@ describe('ironsource callback', () => {
                 timestamp: '123123',
                 userId: 'userId',
             },
-            requestContext: { identity: { sourceIp: '79.125.5.179' } },
+            headers: { 'X-Forwarded-For': '79.125.5.179' },
         });
 
         expect(result).toEqual({ statusCode: 200, body: 'eventId:OK' });
@@ -160,7 +160,7 @@ describe('ironsource callback', () => {
                 timestamp: '123123',
                 userId: 'userId',
             },
-            requestContext: { identity: { sourceIp: '79.125.5.179' } },
+            headers: { 'X-Forwarded-For': '79.125.5.179' },
         });
 
         expect(result).toEqual({ statusCode: 200, body: 'eventId:OK' });
@@ -181,7 +181,7 @@ describe('ironsource callback', () => {
                 timestamp: '123123',
                 userId: 'userId',
             },
-            requestContext: { identity: { sourceIp: '1.2.3.4' } },
+            headers: { 'X-Forwarded-For': '1.2.3.4' },
         });
 
         expect(result).toEqual({ statusCode: 200, body: 'eventId:OK' });
