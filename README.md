@@ -44,7 +44,8 @@ development stage. Refer to serverless docs for more information on deploying.
 
 Deploying this app will automatically create 3 DynamoDB tables: clients, eCPMs and events. Clients link `clientId`s
 to `callbackUrl`s. The events database is a database that saves all events that come through. A future 
-possibility is to remove these after x days if the table becomes too big and costly.
+possibility is to remove these after x days if the table becomes too big and costly. Note that the source ip checking
+only works if the serverless environment is deployed behind a cloudfront distribution.
 
 ## Security measures
 
