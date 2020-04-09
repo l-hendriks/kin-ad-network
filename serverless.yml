@@ -57,16 +57,19 @@ custom:
 functions:
   ironsource_callback:
     handler: handlers/ironsource.default
+    timeout: 30
     events:
       - http:
           path: ironsource
           method: get
   reporting:
     handler: handlers/reporting.default
+    timeout: 300
     events:
       - schedule: cron(0 18 * * ? *) # Every day at 6:00PM UTC
   eCPM:
     handler: handlers/eCPM.default
+    timeout: 30
     events:
       - http:
           path: eCPM
