@@ -83,6 +83,48 @@ describe('ironsource callback', () => {
         expect.assertions(2);
     });
 
+    it('should save the event and not send success callback when the app has no callback', async () => {
+        mockQuery([DynamoDB.Converter.marshall({ clientId: 'testClient', signatureSecret: 'secret' })], undefined);
+        AWS.mock('DynamoDB', 'updateItem', (params: unknown, cb: () => unknown) => {
+            expect(params).toEqual({
+                ExpressionAttributeNames: {
+                    '#rewards': 'rewards',
+                    '#timestamp': 'timestamp',
+                    '#userId': 'userId',
+                },
+                ExpressionAttributeValues: {
+                    ':rewards': { S: '10' },
+                    ':timestamp': { S: '123123' },
+                    ':userId': { S: 'userId' },
+                },
+                Key: {
+                    clientId: { S: 'clientId' },
+                    eventId: { S: 'eventId' },
+                },
+                TableName: 'test-event-table',
+                UpdateExpression: 'SET #rewards = :rewards, #timestamp = :timestamp, #userId = :userId',
+            });
+            cb();
+        });
+
+        const result = await ironsource({
+            queryStringParameters: {
+                country: '',
+                appKey: 'clientId',
+                eventId: 'eventId',
+                publisherSubId: '',
+                rewards: '10',
+                signature: '9a9232cf5155cb0226cc1cb777cd926f',
+                timestamp: '123123',
+                userId: 'userId',
+            },
+            headers: { 'X-Forwarded-For': '79.125.5.179' },
+        });
+
+        expect(result).toEqual({ statusCode: 200, body: 'eventId:OK' });
+        expect.assertions(2);
+    });
+
     it('should not save the event and send success callback when event already saved', async () => {
         mockQuery([DynamoDB.Converter.marshall({ callbackUrl: 'http://someurl.com', clientId: 'testClient', signatureSecret: 'secret' })], [{ x: { N: '1' } }]);
 

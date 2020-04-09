@@ -156,8 +156,10 @@ const ironsourceCallback = async (
         .update(`${clientId}${eventId}${userId}${timestamp}`)
         .digest('hex');
 
-    // Send callback to client
-    await fetch(`${client.callbackUrl}?eventId=${eventId}&rewards=${rewards}&timestamp=${timestamp}&userId=${userId}&signature=${returnSignature}`);
+    // Send callback to client if set
+    if (client.callbackUrl) {
+        await fetch(`${client.callbackUrl}?eventId=${eventId}&rewards=${rewards}&timestamp=${timestamp}&userId=${userId}&signature=${returnSignature}`);
+    }
     return returnMessage(eventId);
 };
 
