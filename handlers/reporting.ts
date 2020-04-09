@@ -87,7 +87,7 @@ const saveeCPMs = async (date: string, eCPMs: Record<string, number[]>): Promise
                 date: { S: date },
             },
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            TableName: process.env.ECPM_TABLE_NAME!,
+            TableName: process.env.INFO_TABLE_NAME!,
             UpdateExpression: 'SET #eCPM = :eCPM',
             ExpressionAttributeNames: { '#eCPM': 'eCPM' },
             ExpressionAttributeValues: DynamoDB.Converter.marshall({

@@ -3,39 +3,39 @@ import AWS from 'aws-sdk-mock';
 import { DynamoDB } from 'aws-sdk';
 import { AttributeMap } from 'aws-sdk/clients/dynamodb';
 
-import eCPM from '../../handlers/eCPM';
+import info from '../../handlers/info';
 
 process.env.REGION = 'test-region';
-process.env.ECPM_TABLE_NAME = 'test-ecpm-table';
+process.env.INFO_TABLE_NAME = 'test-info-table';
 process.env.CLIENT_TABLE_NAME = 'test-client-table';
 
 const mockQuery = (
     clientMockResult: AttributeMap[] | undefined,
-    ecpmMockResult: AttributeMap[] | undefined,
+    infoMockResult: AttributeMap[] | undefined,
 ): void => {
     AWS.mock('DynamoDB', 'query', (params, cb) => {
         expect(params).toMatchSnapshot();
         if (params.TableName === 'test-client-table') {
             cb(null, { Items: clientMockResult });
-        } else if (params.TableName === 'test-ecpm-table') {
-            cb(null, { Items: ecpmMockResult });
+        } else if (params.TableName === 'test-info-table') {
+            cb(null, { Items: infoMockResult });
         }
     });
 };
 
-describe('eCPM aAPI', () => {
+describe('info aAPI', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         AWS.restore();
     });
 
-    it('should return the eCPM', async () => {
+    it('should return the info', async () => {
         mockQuery(
             [DynamoDB.Converter.marshall({ callbackUrl: 'http://someurl.com', clientId: 'testClient', secret: 'someSecret' })],
             [DynamoDB.Converter.marshall({ eCPM: 2.13 })],
         );
 
-        const result = await eCPM({
+        const result = await info({
             queryStringParameters: {
                 date: '2000-01-01',
                 appKey: 'appKey',
@@ -56,7 +56,7 @@ describe('eCPM aAPI', () => {
             [DynamoDB.Converter.marshall({ eCPM: 2.13 })],
         );
 
-        const result = await eCPM({
+        const result = await info({
             queryStringParameters: {
                 date: '2000-01-01',
                 appKey: 'appKey',
@@ -77,7 +77,7 @@ describe('eCPM aAPI', () => {
             [DynamoDB.Converter.marshall({ eCPM: 2.13 })],
         );
 
-        const result = await eCPM({
+        const result = await info({
             queryStringParameters: {
                 date: '2000-01-01',
                 appKey: 'appKey',
@@ -98,7 +98,7 @@ describe('eCPM aAPI', () => {
             undefined,
         );
 
-        const result = await eCPM({
+        const result = await info({
             queryStringParameters: {
                 date: '2000-01-01',
                 appKey: 'appKey',
@@ -119,7 +119,7 @@ describe('eCPM aAPI', () => {
             [],
         );
 
-        const result = await eCPM({
+        const result = await info({
             queryStringParameters: {
                 date: '2000-01-01',
                 appKey: 'appKey',

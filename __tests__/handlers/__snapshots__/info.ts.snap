@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`eCPM aAPI should return an error when the client could not be found 1`] = `
+exports[`info aAPI should return an error when the client could not be found 1`] = `
 Object {
   "ExpressionAttributeNames": Object {
     "#clientId": "clientId",
@@ -15,7 +15,7 @@ Object {
 }
 `;
 
-exports[`eCPM aAPI should return an error when the record could not be found 1`] = `
+exports[`info aAPI should return an error when the record could not be found 1`] = `
 Object {
   "ExpressionAttributeNames": Object {
     "#clientId": "clientId",
@@ -30,7 +30,7 @@ Object {
 }
 `;
 
-exports[`eCPM aAPI should return an error when the record could not be found 2`] = `
+exports[`info aAPI should return an error when the record could not be found 2`] = `
 Object {
   "ExpressionAttributeNames": Object {
     "#clientId": "clientId",
@@ -45,11 +45,11 @@ Object {
     },
   },
   "KeyConditionExpression": "#clientId = :clientId AND #date = :date",
-  "TableName": "test-ecpm-table",
+  "TableName": "test-info-table",
 }
 `;
 
-exports[`eCPM aAPI should return an error when the records are empty 1`] = `
+exports[`info aAPI should return an error when the records are empty 1`] = `
 Object {
   "ExpressionAttributeNames": Object {
     "#clientId": "clientId",
@@ -64,7 +64,7 @@ Object {
 }
 `;
 
-exports[`eCPM aAPI should return an error when the records are empty 2`] = `
+exports[`info aAPI should return an error when the records are empty 2`] = `
 Object {
   "ExpressionAttributeNames": Object {
     "#clientId": "clientId",
@@ -79,11 +79,11 @@ Object {
     },
   },
   "KeyConditionExpression": "#clientId = :clientId AND #date = :date",
-  "TableName": "test-ecpm-table",
+  "TableName": "test-info-table",
 }
 `;
 
-exports[`eCPM aAPI should return an error when the secret is incorrect 1`] = `
+exports[`info aAPI should return an error when the secret is incorrect 1`] = `
 Object {
   "ExpressionAttributeNames": Object {
     "#clientId": "clientId",
@@ -98,7 +98,7 @@ Object {
 }
 `;
 
-exports[`eCPM aAPI should return the eCPM 1`] = `
+exports[`info aAPI should return the info 1`] = `
 Object {
   "ExpressionAttributeNames": Object {
     "#clientId": "clientId",
@@ -113,7 +113,7 @@ Object {
 }
 `;
 
-exports[`eCPM aAPI should return the eCPM 2`] = `
+exports[`info aAPI should return the info 2`] = `
 Object {
   "ExpressionAttributeNames": Object {
     "#clientId": "clientId",
@@ -128,6 +128,6 @@ Object {
     },
   },
   "KeyConditionExpression": "#clientId = :clientId AND #date = :date",
-  "TableName": "test-ecpm-table",
+  "TableName": "test-info-table",
 }
 `;

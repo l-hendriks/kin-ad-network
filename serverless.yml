@@ -12,7 +12,7 @@ provider:
     REGION: ${self:provider.region}
     CLIENT_TABLE_NAME: ${self:provider.stage}-clients
     EVENTS_TABLE_NAME: ${self:provider.stage}-events
-    ECPM_TABLE_NAME: ${self:provider.stage}-eCPM
+    INFO_TABLE_NAME: ${self:provider.stage}-info
     IRONSOURCE_PRIVATE_KEY: ${self:custom.credentials.IRONSOURCE_PRIVATE_KEY}
     IRONSOURCE_SECRET_KEY: ${self:custom.credentials.IRONSOURCE_SECRET_KEY}
     IRONSOURCE_REFRESH_TOKEN: ${self:custom.credentials.IRONSOURCE_REFRESH_TOKEN}
@@ -31,7 +31,7 @@ provider:
     - Effect: Deny
       Principal: "*"
       Action: ["Update:Replace", "Update:Delete"]
-      Resource: LogicalResourceId/DynamoDBECPMTable
+      Resource: LogicalResourceId/DynamoDBInfoTable
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -49,7 +49,7 @@ provider:
       - dynamodb:Query
       - dynamodb:UpdateItem
       Resource:
-        - { "Fn::Join" : [ "", [ { "Fn::GetAtt": ["DynamoDBECPMTable", "Arn"] }, "*" ] ] }
+        - { "Fn::Join" : [ "", [ { "Fn::GetAtt": ["DynamoDBInfoTable", "Arn"] }, "*" ] ] }
 
 custom:
   credentials: ${ssm:/aws/reference/secretsmanager/${self:provider.stage}~true}
@@ -67,12 +67,12 @@ functions:
     timeout: 300
     events:
       - schedule: cron(0 18 * * ? *) # Every day at 6:00PM UTC
-  eCPM:
-    handler: handlers/eCPM.default
+  info:
+    handler: handlers/info.default
     timeout: 30
     events:
       - http:
-          path: eCPM
+          path: info
           method: get
 
 resources:
@@ -109,10 +109,10 @@ resources:
           KeyType: RANGE
       BillingMode: PAY_PER_REQUEST
 
-  DynamoDBECPMTable:
+  DynamoDBInfoTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: ${self:provider.stage}-eCPM
+      TableName: ${self:provider.stage}-info
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
       AttributeDefinitions:

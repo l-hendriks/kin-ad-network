@@ -28,7 +28,7 @@ jest.mock('google-spreadsheet', () => ({
 }));
 
 process.env.REGION = 'test-region';
-process.env.ECPM_TABLE_NAME = 'test-ecpm-table';
+process.env.INFO_TABLE_NAME = 'test-info-table';
 process.env.GOOGLE_CREDENTIALS_JSON = JSON.stringify({});
 process.env.IRONSOURCE_SECRET_KEY = 'secret';
 process.env.IRONSOURCE_REFRESH_TOKEN = 'token';
@@ -52,7 +52,7 @@ describe('reporting cron job', () => {
                     clientId: { S: 'appKey' },
                     date: { S: '2019-12-31' },
                 },
-                TableName: 'test-ecpm-table',
+                TableName: 'test-info-table',
                 UpdateExpression: 'SET #eCPM = :eCPM',
             });
             cb();

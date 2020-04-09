@@ -1,8 +1,8 @@
 import { DynamoDB } from 'aws-sdk';
 import {
     LambdaResponse,
-    ECPM,
-    ECPMEvent,
+    Info,
+    InfoEvent,
     Client,
 } from '../constants';
 
@@ -23,13 +23,13 @@ const getClient = async (clientId: string): Promise<Client> => {
     return DynamoDB.Converter.unmarshall(Items[0]) as Client;
 };
 
-const getECPM = async (clientId: string, date: string): Promise<ECPM|undefined> => {
+const getECPM = async (clientId: string, date: string): Promise<Info|undefined> => {
     const ddb = new DynamoDB({ region: process.env.REGION });
     const { Items } = await ddb.query({
         ExpressionAttributeNames: { '#clientId': 'clientId', '#date': 'date' },
         ExpressionAttributeValues: { ':clientId': { S: clientId }, ':date': { S: date } },
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        TableName: process.env.ECPM_TABLE_NAME!,
+        TableName: process.env.INFO_TABLE_NAME!,
         KeyConditionExpression: '#clientId = :clientId AND #date = :date',
     }).promise();
 
@@ -37,11 +37,11 @@ const getECPM = async (clientId: string, date: string): Promise<ECPM|undefined> 
         return undefined;
     }
 
-    return DynamoDB.Converter.unmarshall(Items[0]) as ECPM;
+    return DynamoDB.Converter.unmarshall(Items[0]) as Info;
 };
 
-const eCPM = async (
-    event: ECPMEvent,
+const info = async (
+    event: InfoEvent,
 ): Promise<LambdaResponse> => {
     const {
         secret,
@@ -82,4 +82,4 @@ const eCPM = async (
     };
 };
 
-export default eCPM;
+export default info;

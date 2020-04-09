@@ -14,7 +14,7 @@ export interface IronSourceCallback {
     };
 }
 
-export interface ECPMEvent {
+export interface InfoEvent {
     queryStringParameters: {
         appKey: string;
         date: string;
@@ -34,7 +34,7 @@ export interface Client {
     signatureSecret: string;
 }
 
-export interface ECPM {
+export interface Info {
     clientId: string;
     date: string;
     eCPM: number;
