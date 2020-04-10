@@ -103,10 +103,14 @@ const saveInformation = async (
 ): Promise<void> => {
     const ddb = new DynamoDB({ region: process.env.REGION });
 
-    Object.entries(eCPMs).forEach(async ([app, { eCPM, impressions, revenue }]) => {
+    for (let i = 0; i < Object.keys(eCPMs).length; i += 1) {
+        const app = Object.keys(eCPMs)[i];
+        const { eCPM, impressions, revenue } = eCPMs[app];
         const average = calculateAverage(eCPM, impressions);
         const totalRevenue = Math.round(100 * revenue.reduce((sum, val) => sum + val, 0)) / 100;
 
+        // @TODO: Refactor this to a Promise.all
+        // eslint-disable-next-line no-await-in-loop
         await ddb.updateItem({
             Key: {
                 clientId: { S: app },
@@ -121,7 +125,7 @@ const saveInformation = async (
                 ':revenue': totalRevenue,
             }),
         }).promise();
-    }, {});
+    }
 };
 
 const reporting = async (): Promise<void> => {
