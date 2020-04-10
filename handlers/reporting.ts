@@ -137,13 +137,16 @@ const reporting = async (): Promise<void> => {
 
     const sheets = await loadGoogleSheet();
     const information = {};
-    AD_NETWORKS.forEach(async (adNetwork, i) => {
+    for (let i = 0; i < AD_NETWORKS.length; i += 1) {
+        const adNetwork = AD_NETWORKS[i];
         // Add row to google sheets
         const report = parseReport(reportsByAdNetwork[i]);
-        sheets[adNetwork].addRow({
+        // @TODO: This can be more efficient with a Promise.all
+        // eslint-disable-next-line no-await-in-loop
+        await (sheets[adNetwork].addRow({
             Date: startDate,
             ...report,
-        });
+        }));
 
         // Add eCPM to save averages in database
         reportsByAdNetwork[i].forEach(({ appKey, data }) => {
@@ -162,7 +165,7 @@ const reporting = async (): Promise<void> => {
                     .concat(data.map((record) => record.revenue));
             }
         });
-    });
+    }
 
     await saveInformation(startDate, information);
 };
