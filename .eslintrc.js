@@ -26,5 +26,6 @@ module.exports = {
   rules: {
     indent: ['error', 4],
     'import/extensions': [0],
+    'no-mixed-operators': ['error', { allowSamePrecedence: true }]
   }
 };

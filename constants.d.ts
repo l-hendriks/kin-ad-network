@@ -102,3 +102,9 @@ export interface IronSourceReport {
     appName: string;
     data: IronSourceReportAppData[];
 }
+
+export interface InformationObject {
+    eCPM: number[];
+    impressions: number[];
+    revenue: number[];
+}

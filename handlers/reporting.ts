@@ -3,7 +3,12 @@ import { DynamoDB } from 'aws-sdk';
 import fetch from 'node-fetch';
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 import moment from 'moment-es6';
-import { Doc, Sheet, IronSourceReport } from '../constants';
+import {
+    Doc,
+    Sheet,
+    IronSourceReport,
+    InformationObject,
+} from '../constants';
 
 const IRONSOURCE_AUTH_URL = 'https://platform.ironsrc.com/partners/publisher/auth';
 const IRONSOURCE_REPORTING_URL = 'https://platform.ironsrc.com/partners/publisher/mediation/applications/v6/stats';
@@ -75,11 +80,27 @@ const loadGoogleSheet = async (): Promise<Record<string, Sheet>> => {
     return loadAllSheets(doc);
 };
 
-const saveeCPMs = async (date: string, eCPMs: Record<string, number[]>): Promise<void> => {
+const calculateAverage = (eCPM: number[], impressions: number[]): number => {
+    let totalImpressions = 0;
+    let average = 0;
+    for (let i = 0; i < eCPM.length; i += 1) {
+        if (eCPM[i] > 0) {
+            totalImpressions += impressions[i];
+            average += eCPM[i] * impressions[i];
+        }
+    }
+    return Math.round(100 * average / totalImpressions) / 100;
+};
+
+const saveInformation = async (
+    date: string,
+    eCPMs: Record<string, InformationObject>,
+): Promise<void> => {
     const ddb = new DynamoDB({ region: process.env.REGION });
 
-    Object.entries(eCPMs).forEach(async ([app, eCPM]) => {
-        const average = eCPM.reduce((sum, val) => sum + val, 0) / eCPM.length;
+    Object.entries(eCPMs).forEach(async ([app, { eCPM, impressions, revenue }]) => {
+        const average = calculateAverage(eCPM, impressions);
+        const totalRevenue = revenue.reduce((sum, val) => sum + val, 0);
 
         await ddb.updateItem({
             Key: {
@@ -88,10 +109,11 @@ const saveeCPMs = async (date: string, eCPMs: Record<string, number[]>): Promise
             },
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             TableName: process.env.INFO_TABLE_NAME!,
-            UpdateExpression: 'SET #eCPM = :eCPM',
-            ExpressionAttributeNames: { '#eCPM': 'eCPM' },
+            UpdateExpression: 'SET #eCPM = :eCPM, #revenue = :revenue',
+            ExpressionAttributeNames: { '#eCPM': 'eCPM', '#revenue': 'revenue' },
             ExpressionAttributeValues: DynamoDB.Converter.marshall({
                 ':eCPM': average,
+                ':revenue': totalRevenue,
             }),
         }).promise();
     }, {});
@@ -109,7 +131,7 @@ const reporting = async (): Promise<void> => {
     );
 
     const sheets = await loadGoogleSheet();
-    const eCPMs = {};
+    const information = {};
     AD_NETWORKS.forEach(async (adNetwork, i) => {
         // Add row to google sheets
         const report = parseReport(reportsByAdNetwork[i]);
@@ -119,13 +141,16 @@ const reporting = async (): Promise<void> => {
         });
 
         // Add eCPM to save averages in database
-        reportsByAdNetwork[i].forEach((appReport) => {
-            eCPMs[appReport.appKey] = ([] as number[])
-                .concat(appReport.data.map((data) => data.eCPM));
+        reportsByAdNetwork[i].forEach(({ appKey, data }) => {
+            information[appKey] = {
+                eCPM: ([] as number[]).concat(data.map((record) => record.eCPM)),
+                impressions: ([] as number[]).concat(data.map((record) => record.impressions)),
+                revenue: ([] as number[]).concat(data.map((record) => record.revenue)),
+            };
         });
     });
 
-    await saveeCPMs(startDate, eCPMs);
+    await saveInformation(startDate, information);
 };
 
 export default reporting;

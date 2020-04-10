@@ -44,16 +44,18 @@ describe('reporting cron job', () => {
             expect(params).toEqual({
                 ExpressionAttributeNames: {
                     '#eCPM': 'eCPM',
+                    '#revenue': 'revenue',
                 },
                 ExpressionAttributeValues: {
-                    ':eCPM': { N: '2.5' },
+                    ':eCPM': { N: '2.09' },
+                    ':revenue': { N: '0.07' },
                 },
                 Key: {
                     clientId: { S: 'appKey' },
                     date: { S: '2019-12-31' },
                 },
                 TableName: 'test-info-table',
-                UpdateExpression: 'SET #eCPM = :eCPM',
+                UpdateExpression: 'SET #eCPM = :eCPM, #revenue = :revenue',
             });
             cb();
         });
@@ -79,7 +81,12 @@ describe('reporting cron job', () => {
                 adUnits: 'Rewarded Video',
                 bundleId: 'bundle.id',
                 appName: 'App name',
-                data: [{ eCPM: 2, revenue: 0.02 }, { eCPM: 3, revenue: 0.03 }],
+                data: [
+                    { eCPM: 2, revenue: 0.02, impressions: 100 },
+                    // do not count 0 eCPM with >0 impressions (admob)
+                    { eCPM: 0, revenue: 0.02, impressions: 50 },
+                    { eCPM: 3, revenue: 0.03, impressions: 10 },
+                ],
             }]);
 
         await reporting();
@@ -87,7 +94,7 @@ describe('reporting cron job', () => {
         expect(mockLoadInfo).toBeCalled();
         expect(mockUseServiceAccountAuth).toBeCalled();
         expect(mockSheet.loadHeaderRow).toBeCalled();
-        expect(mockSheet.addRow).toBeCalledWith({ Date: '2019-12-31', appKey: 0.05 });
+        expect(mockSheet.addRow).toBeCalledWith({ Date: '2019-12-31', appKey: 0.07 });
 
         expect.assertions(5);
     });
