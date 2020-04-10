@@ -154,9 +154,12 @@ const reporting = async (): Promise<void> => {
                     revenue: ([] as number[]).concat(data.map((record) => record.revenue)),
                 };
             } else {
-                information[appKey].eCPM = information[appKey].eCPM.concat(data.map((record) => record.eCPM));
-                information[appKey].impressions = information[appKey].impressions.concat(data.map((record) => record.impressions));
-                information[appKey].revenue = information[appKey].revenue.concat(data.map((record) => record.revenue));
+                information[appKey].eCPM = information[appKey].eCPM
+                    .concat(data.map((record) => record.eCPM));
+                information[appKey].impressions = information[appKey].impressions
+                    .concat(data.map((record) => record.impressions));
+                information[appKey].revenue = information[appKey].revenue
+                    .concat(data.map((record) => record.revenue));
             }
         });
     });
