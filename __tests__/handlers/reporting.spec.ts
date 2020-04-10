@@ -15,6 +15,11 @@ const mockSheet = {
     addRow: jest.fn(),
     title: 'ironSource',
 };
+const mockSheetAdMob = {
+    loadHeaderRow: jest.fn(),
+    addRow: jest.fn(),
+    title: 'AdMob',
+};
 const mockLoadInfo = jest.fn();
 const mockUseServiceAccountAuth = jest.fn();
 
@@ -23,7 +28,7 @@ jest.mock('google-spreadsheet', () => ({
     GoogleSpreadsheet: jest.fn(() => ({
         loadInfo: mockLoadInfo,
         useServiceAccountAuth: mockUseServiceAccountAuth,
-        sheetsByIndex: [mockSheet],
+        sheetsByIndex: [mockSheet, mockSheetAdMob],
     })),
 }));
 
@@ -47,8 +52,8 @@ describe('reporting cron job', () => {
                     '#revenue': 'revenue',
                 },
                 ExpressionAttributeValues: {
-                    ':eCPM': { N: '2.09' },
-                    ':revenue': { N: '0.07' },
+                    ':eCPM': { N: '2.06' },
+                    ':revenue': { N: '0.09' },
                 },
                 Key: {
                     clientId: { S: 'appKey' },
@@ -74,7 +79,7 @@ describe('reporting cron job', () => {
                 Authorization: 'Bearer bearer',
             },
         })
-            .get('/partners/publisher/mediation/applications/v6/stats?startDate=2019-12-31&endDate=2019-12-31&breakdown=app&ironSource&adSource=ironSource')
+            .get('/partners/publisher/mediation/applications/v6/stats?startDate=2019-12-31&endDate=2019-12-31&breakdown=app&adSource=ironSource')
             .reply(200, [{
                 appKey: 'appKey',
                 date: '2020-04-03',
@@ -89,13 +94,104 @@ describe('reporting cron job', () => {
                 ],
             }]);
 
+        nock('https://platform.ironsrc.com', {
+            reqheaders: {
+                Authorization: 'Bearer bearer',
+            },
+        })
+            .get('/partners/publisher/mediation/applications/v6/stats?startDate=2019-12-31&endDate=2019-12-31&breakdown=app&adSource=AdMob')
+            .reply(200, [{
+                appKey: 'appKey',
+                date: '2020-04-03',
+                adUnits: 'Rewarded Video',
+                bundleId: 'bundle.id',
+                appName: 'App name',
+                data: [
+                    { eCPM: 2, revenue: 0.02, impressions: 50 },
+                ],
+            }]);
+
         await reporting();
 
         expect(mockLoadInfo).toBeCalled();
         expect(mockUseServiceAccountAuth).toBeCalled();
         expect(mockSheet.loadHeaderRow).toBeCalled();
         expect(mockSheet.addRow).toBeCalledWith({ Date: '2019-12-31', appKey: 0.07 });
+        expect(mockSheetAdMob.loadHeaderRow).toBeCalled();
+        expect(mockSheetAdMob.addRow).toBeCalledWith({ Date: '2019-12-31', appKey: 0.02 });
 
-        expect.assertions(5);
+        expect.assertions(7);
+    });
+
+    it('should work when you have zero impressions', async () => {
+        AWS.mock('DynamoDB', 'updateItem', (params: unknown, cb: () => unknown) => {
+            expect(params).toEqual({
+                ExpressionAttributeNames: {
+                    '#eCPM': 'eCPM',
+                    '#revenue': 'revenue',
+                },
+                ExpressionAttributeValues: {
+                    ':eCPM': { N: '0' },
+                    ':revenue': { N: '0' },
+                },
+                Key: {
+                    clientId: { S: 'appKey' },
+                    date: { S: '2019-12-31' },
+                },
+                TableName: 'test-info-table',
+                UpdateExpression: 'SET #eCPM = :eCPM, #revenue = :revenue',
+            });
+            cb();
+        });
+
+        nock('https://platform.ironsrc.com', {
+            reqheaders: {
+                secretkey: 'secret',
+                refreshToken: 'token',
+            },
+        })
+            .get('/partners/publisher/auth')
+            .reply(200, JSON.stringify('bearer'));
+
+        nock('https://platform.ironsrc.com', {
+            reqheaders: {
+                Authorization: 'Bearer bearer',
+            },
+        })
+            .get('/partners/publisher/mediation/applications/v6/stats?startDate=2019-12-31&endDate=2019-12-31&breakdown=app&adSource=ironSource')
+            .reply(200, [{
+                appKey: 'appKey',
+                date: '2020-04-03',
+                adUnits: 'Rewarded Video',
+                bundleId: 'bundle.id',
+                appName: 'App name',
+                data: [{ eCPM: 0, revenue: 0, impressions: 0 }],
+            }]);
+
+        nock('https://platform.ironsrc.com', {
+            reqheaders: {
+                Authorization: 'Bearer bearer',
+            },
+        })
+            .get('/partners/publisher/mediation/applications/v6/stats?startDate=2019-12-31&endDate=2019-12-31&breakdown=app&adSource=AdMob')
+            .reply(200, [{
+                appKey: 'appKey',
+                date: '2020-04-03',
+                adUnits: 'Rewarded Video',
+                bundleId: 'bundle.id',
+                appName: 'App name',
+                data: [{ eCPM: 0, revenue: 0, impressions: 0 }],
+            }]);
+
+        await reporting();
+
+        expect(mockLoadInfo).toBeCalled();
+        expect(mockUseServiceAccountAuth).toBeCalled();
+        expect(mockSheet.loadHeaderRow).toBeCalled();
+        expect(mockSheet.addRow).toBeCalledWith({ Date: '2019-12-31', appKey: 0 });
+        expect(mockSheetAdMob.loadHeaderRow).toBeCalled();
+        expect(mockSheetAdMob.addRow).toBeCalledWith({ Date: '2019-12-31', appKey: 0 });
+
+        expect.assertions(7);
     });
 });

@@ -12,7 +12,7 @@ import {
 
 const IRONSOURCE_AUTH_URL = 'https://platform.ironsrc.com/partners/publisher/auth';
 const IRONSOURCE_REPORTING_URL = 'https://platform.ironsrc.com/partners/publisher/mediation/applications/v6/stats';
-const AD_NETWORKS = ['ironSource'];
+const AD_NETWORKS = ['ironSource', 'AdMob'];
 
 const loadAllSheets = async (doc: Doc): Promise<Record<string, Sheet>> => {
     // Load sheets by title
@@ -61,7 +61,7 @@ const getYesterdayReport = async (
     adSource: string,
 ): Promise<IronSourceReport[]> => {
     const res = await fetch(
-        `${IRONSOURCE_REPORTING_URL}?startDate=${startDate}&endDate=${endDate}&breakdown=app&ironSource&adSource=${adSource}`,
+        `${IRONSOURCE_REPORTING_URL}?startDate=${startDate}&endDate=${endDate}&breakdown=app&adSource=${adSource}`,
         {
             headers: {
                 Authorization: `Bearer ${bearerToken}`,
@@ -89,6 +89,11 @@ const calculateAverage = (eCPM: number[], impressions: number[]): number => {
             average += eCPM[i] * impressions[i];
         }
     }
+
+    if (totalImpressions === 0) {
+        return 0;
+    }
+
     return Math.round(100 * average / totalImpressions) / 100;
 };
 
@@ -100,7 +105,7 @@ const saveInformation = async (
 
     Object.entries(eCPMs).forEach(async ([app, { eCPM, impressions, revenue }]) => {
         const average = calculateAverage(eCPM, impressions);
-        const totalRevenue = revenue.reduce((sum, val) => sum + val, 0);
+        const totalRevenue = Math.round(100 * revenue.reduce((sum, val) => sum + val, 0)) / 100;
 
         await ddb.updateItem({
             Key: {
@@ -142,11 +147,17 @@ const reporting = async (): Promise<void> => {
 
         // Add eCPM to save averages in database
         reportsByAdNetwork[i].forEach(({ appKey, data }) => {
-            information[appKey] = {
-                eCPM: ([] as number[]).concat(data.map((record) => record.eCPM)),
-                impressions: ([] as number[]).concat(data.map((record) => record.impressions)),
-                revenue: ([] as number[]).concat(data.map((record) => record.revenue)),
-            };
+            if (!information[appKey]) {
+                information[appKey] = {
+                    eCPM: ([] as number[]).concat(data.map((record) => record.eCPM)),
+                    impressions: ([] as number[]).concat(data.map((record) => record.impressions)),
+                    revenue: ([] as number[]).concat(data.map((record) => record.revenue)),
+                };
+            } else {
+                information[appKey].eCPM = information[appKey].eCPM.concat(data.map((record) => record.eCPM));
+                information[appKey].impressions = information[appKey].impressions.concat(data.map((record) => record.impressions));
+                information[appKey].revenue = information[appKey].revenue.concat(data.map((record) => record.revenue));
+            }
         });
     });
 
