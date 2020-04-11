@@ -158,7 +158,24 @@ const ironsourceCallback = async (
 
     // Send callback to client if set
     if (client.callbackUrl) {
-        await fetch(`${client.callbackUrl}?eventId=${eventId}&rewards=${rewards}&timestamp=${timestamp}&userId=${userId}&signature=${returnSignature}`);
+        const qsObject = {
+            eventId,
+            rewards,
+            timestamp,
+            userId,
+            signature: returnSignature,
+            // Attach custom parameters to the querystring as well
+            ...Object.entries(event.queryStringParameters).reduce((acc, [key, value]) => {
+                if (key.includes('custom_')) {
+                    acc[key] = value;
+                }
+                return acc;
+            }, {}),
+        };
+
+
+        const returnQuerystring = Object.keys(qsObject).map((key) => (`${key}=${qsObject[key]}`)).join('&');
+        await fetch(`${client.callbackUrl}?${returnQuerystring}`);
     }
     return returnMessage(eventId);
 };

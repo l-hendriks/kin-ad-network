@@ -62,7 +62,7 @@ describe('ironsource callback', () => {
         });
 
         nock('http://someurl.com')
-            .get('/?eventId=eventId&rewards=10&timestamp=123123&userId=userId&signature=52df893c0ebcd0039d76d683f08275f8b34bfd05975e171ec86b217e046ca364')
+            .get('/?eventId=eventId&rewards=10&timestamp=123123&userId=userId&signature=52df893c0ebcd0039d76d683f08275f8b34bfd05975e171ec86b217e046ca364&custom_wallet=abc123')
             .reply(200);
 
         const result = await ironsource({
@@ -75,6 +75,7 @@ describe('ironsource callback', () => {
                 signature: '9a9232cf5155cb0226cc1cb777cd926f',
                 timestamp: '123123',
                 userId: 'userId',
+                custom_wallet: 'abc123', // eslint-disable-line @typescript-eslint/camelcase
             },
             headers: { 'X-Forwarded-For': '79.125.5.179' },
         });
