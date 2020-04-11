@@ -173,7 +173,6 @@ const ironsourceCallback = async (
             }, {}),
         };
 
-
         const returnQuerystring = Object.keys(qsObject).map((key) => (`${key}=${qsObject[key]}`)).join('&');
         await fetch(`${client.callbackUrl}?${returnQuerystring}`);
     }

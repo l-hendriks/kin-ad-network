@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`info aAPI should return an error when the client could not be found 1`] = `
+exports[`info API should return an error when the client could not be found 1`] = `
 Object {
   "ExpressionAttributeNames": Object {
     "#clientId": "clientId",
@@ -15,7 +15,7 @@ Object {
 }
 `;
 
-exports[`info aAPI should return an error when the record could not be found 1`] = `
+exports[`info API should return an error when the record could not be found 1`] = `
 Object {
   "ExpressionAttributeNames": Object {
     "#clientId": "clientId",
@@ -30,7 +30,7 @@ Object {
 }
 `;
 
-exports[`info aAPI should return an error when the record could not be found 2`] = `
+exports[`info API should return an error when the record could not be found 2`] = `
 Object {
   "ExpressionAttributeNames": Object {
     "#clientId": "clientId",
@@ -49,7 +49,7 @@ Object {
 }
 `;
 
-exports[`info aAPI should return an error when the records are empty 1`] = `
+exports[`info API should return an error when the records are empty 1`] = `
 Object {
   "ExpressionAttributeNames": Object {
     "#clientId": "clientId",
@@ -64,7 +64,7 @@ Object {
 }
 `;
 
-exports[`info aAPI should return an error when the records are empty 2`] = `
+exports[`info API should return an error when the records are empty 2`] = `
 Object {
   "ExpressionAttributeNames": Object {
     "#clientId": "clientId",
@@ -83,7 +83,7 @@ Object {
 }
 `;
 
-exports[`info aAPI should return an error when the secret is incorrect 1`] = `
+exports[`info API should return an error when the secret is incorrect 1`] = `
 Object {
   "ExpressionAttributeNames": Object {
     "#clientId": "clientId",
@@ -98,7 +98,7 @@ Object {
 }
 `;
 
-exports[`info aAPI should return the info 1`] = `
+exports[`info API should return the info 1`] = `
 Object {
   "ExpressionAttributeNames": Object {
     "#clientId": "clientId",
@@ -113,7 +113,7 @@ Object {
 }
 `;
 
-exports[`info aAPI should return the info 2`] = `
+exports[`info API should return the info 2`] = `
 Object {
   "ExpressionAttributeNames": Object {
     "#clientId": "clientId",

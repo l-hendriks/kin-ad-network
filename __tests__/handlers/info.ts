@@ -23,7 +23,7 @@ const mockQuery = (
     });
 };
 
-describe('info aAPI', () => {
+describe('info API', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         AWS.restore();
