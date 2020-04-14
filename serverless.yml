@@ -108,6 +108,9 @@ resources:
         - AttributeName: "eventId"
           KeyType: RANGE
       BillingMode: PAY_PER_REQUEST
+      TimeToLiveSpecification:
+        AttributeName: expires
+        Enabled: true
 
   DynamoDBInfoTable:
     Type: AWS::DynamoDB::Table

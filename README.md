@@ -67,7 +67,8 @@ using `process.env.IRONSOURCE_PRIVATE_KEY`.
 With every request, a check is done to see if that request is already been rewarded before. If you happen
 to have get a link of a video reward, you cannot run it again and get the reward again. As it is impossible
 to generate new links that generate valid rewards (because you need to calculate the signature), you cannot
-generate reward links without the secret nor reuse ones that were valid at some point.
+generate reward links without the secret nor reuse ones that were valid at some point. We only retain events
+for one day, as events older than a day are filtered out by timestamp checking.
 
 ### Source IP restriction
 

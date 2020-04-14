@@ -27,6 +27,9 @@ const mockQuery = (
 const consoleLog = console.log;
 console.log = jest.fn();
 
+const dateNow = Date.now;
+Date.now = (): number => 1586582640000;
+
 describe('ironsource callback', () => {
     beforeEach(() => {
         jest.clearAllMocks();
@@ -35,6 +38,7 @@ describe('ironsource callback', () => {
 
     afterAll(() => {
         console.log = consoleLog;
+        Date.now = dateNow;
     });
 
     it('should save the event and send success callback', async () => {
@@ -42,27 +46,29 @@ describe('ironsource callback', () => {
         AWS.mock('DynamoDB', 'updateItem', (params: unknown, cb: () => unknown) => {
             expect(params).toEqual({
                 ExpressionAttributeNames: {
+                    '#expires': 'expires',
                     '#rewards': 'rewards',
                     '#timestamp': 'timestamp',
                     '#userId': 'userId',
                 },
                 ExpressionAttributeValues: {
                     ':rewards': { S: '10' },
-                    ':timestamp': { S: '123123' },
+                    ':timestamp': { S: '202004110724' },
                     ':userId': { S: 'userId' },
+                    ':expires': { N: '1586669040' },
                 },
                 Key: {
                     clientId: { S: 'clientId' },
                     eventId: { S: 'eventId' },
                 },
                 TableName: 'test-event-table',
-                UpdateExpression: 'SET #rewards = :rewards, #timestamp = :timestamp, #userId = :userId',
+                UpdateExpression: 'SET #rewards = :rewards, #timestamp = :timestamp, #userId = :userId, #expires = :expires',
             });
             cb();
         });
 
         nock('http://someurl.com')
-            .get('/?eventId=eventId&rewards=10&timestamp=123123&userId=userId&signature=52df893c0ebcd0039d76d683f08275f8b34bfd05975e171ec86b217e046ca364&custom_wallet=abc123')
+            .get('/?eventId=eventId&rewards=10&timestamp=202004110724&userId=userId&signature=2441261fe864c7a8e2dfa484741f05b4c272b917a9a04943cd6d8026052e9d77&custom_wallet=abc123')
             .reply(200);
 
         const result = await ironsource({
@@ -72,8 +78,8 @@ describe('ironsource callback', () => {
                 eventId: 'eventId',
                 publisherSubId: '',
                 rewards: '10',
-                signature: '9a9232cf5155cb0226cc1cb777cd926f',
-                timestamp: '123123',
+                signature: '6d19a5d0cf1d78b97571d85f64b6675e',
+                timestamp: '202004110724',
                 userId: 'userId',
                 custom_wallet: 'abc123', // eslint-disable-line @typescript-eslint/camelcase
             },
@@ -89,21 +95,23 @@ describe('ironsource callback', () => {
         AWS.mock('DynamoDB', 'updateItem', (params: unknown, cb: () => unknown) => {
             expect(params).toEqual({
                 ExpressionAttributeNames: {
+                    '#expires': 'expires',
                     '#rewards': 'rewards',
                     '#timestamp': 'timestamp',
                     '#userId': 'userId',
                 },
                 ExpressionAttributeValues: {
                     ':rewards': { S: '10' },
-                    ':timestamp': { S: '123123' },
+                    ':timestamp': { S: '202004110724' },
                     ':userId': { S: 'userId' },
+                    ':expires': { N: '1586669040' },
                 },
                 Key: {
                     clientId: { S: 'clientId' },
                     eventId: { S: 'eventId' },
                 },
                 TableName: 'test-event-table',
-                UpdateExpression: 'SET #rewards = :rewards, #timestamp = :timestamp, #userId = :userId',
+                UpdateExpression: 'SET #rewards = :rewards, #timestamp = :timestamp, #userId = :userId, #expires = :expires',
             });
             cb();
         });
@@ -115,8 +123,8 @@ describe('ironsource callback', () => {
                 eventId: 'eventId',
                 publisherSubId: '',
                 rewards: '10',
-                signature: '9a9232cf5155cb0226cc1cb777cd926f',
-                timestamp: '123123',
+                signature: '6d19a5d0cf1d78b97571d85f64b6675e',
+                timestamp: '202004110724',
                 userId: 'userId',
             },
             headers: { 'X-Forwarded-For': '79.125.5.179' },
@@ -124,6 +132,25 @@ describe('ironsource callback', () => {
 
         expect(result).toEqual({ statusCode: 200, body: 'eventId:OK' });
         expect.assertions(2);
+    });
+
+    it('should not save the event and send success callback when event older than a day', async () => {
+        const result = await ironsource({
+            queryStringParameters: {
+                country: '',
+                appKey: 'clientId',
+                eventId: 'eventId',
+                publisherSubId: '',
+                rewards: '10',
+                signature: '6d19a5d0cf1d78b97571d85f64b6675e',
+                timestamp: '202004100624',
+                userId: 'userId',
+            },
+            headers: { 'X-Forwarded-For': '79.125.5.179' },
+        });
+
+        expect(result).toEqual({ statusCode: 200, body: 'eventId:OK' });
+        expect(console.log).toBeCalledWith('ERROR: expired event: 202004100624');
     });
 
     it('should not save the event and send success callback when event already saved', async () => {
@@ -136,8 +163,8 @@ describe('ironsource callback', () => {
                 eventId: 'eventId',
                 publisherSubId: '',
                 rewards: '10',
-                signature: '9a9232cf5155cb0226cc1cb777cd926f',
-                timestamp: '123123',
+                signature: '6d19a5d0cf1d78b97571d85f64b6675e',
+                timestamp: '202004110724',
                 userId: 'userId',
             },
             headers: { 'X-Forwarded-For': '79.125.5.179' },
@@ -157,8 +184,8 @@ describe('ironsource callback', () => {
                 eventId: 'eventId',
                 publisherSubId: '',
                 rewards: '10',
-                signature: '9a9232cf5155cb0226cc1cb777cd926f',
-                timestamp: '123123',
+                signature: '6d19a5d0cf1d78b97571d85f64b6675e',
+                timestamp: '202004110724',
                 userId: 'userId',
             },
             headers: { 'X-Forwarded-For': '79.125.5.179' },
@@ -178,8 +205,8 @@ describe('ironsource callback', () => {
                 eventId: 'eventId',
                 publisherSubId: '',
                 rewards: '10',
-                signature: '9a9232cf5155cb0226cc1cb777cd926f',
-                timestamp: '123123',
+                signature: '6d19a5d0cf1d78b97571d85f64b6675e',
+                timestamp: '202004110724',
                 userId: 'userId',
             },
             headers: { 'X-Forwarded-For': '79.125.5.179' },
@@ -200,7 +227,7 @@ describe('ironsource callback', () => {
                 publisherSubId: '',
                 rewards: '10',
                 signature: 'wrong',
-                timestamp: '123123',
+                timestamp: '202004110724',
                 userId: 'userId',
             },
             headers: { 'X-Forwarded-For': '79.125.5.179' },
@@ -221,7 +248,7 @@ describe('ironsource callback', () => {
                 publisherSubId: '',
                 rewards: '10',
                 signature: 'wrong',
-                timestamp: '123123',
+                timestamp: '202004110724',
                 userId: 'userId',
             },
             headers: { 'X-Forwarded-For': '1.2.3.4' },

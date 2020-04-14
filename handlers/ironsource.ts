@@ -1,6 +1,7 @@
 import { createHash, createHmac } from 'crypto';
 import { DynamoDB } from 'aws-sdk';
 import fetch from 'node-fetch';
+import moment from 'moment-es6';
 import { LambdaResponse, IronSourceCallback, Client } from '../constants';
 
 // From https://developers.ironsrc.com/ironsource-mobile-general/handling-server-to-server-callback-events/
@@ -61,6 +62,8 @@ const saveEvent = (
     userId: string,
 ): Promise<unknown> => {
     const ddb = new DynamoDB({ region: process.env.REGION });
+    const expires = Math.floor(Date.now() / 1000) + 86400; // Expire after a day
+
     return ddb.updateItem({
         Key: {
             clientId: { S: clientId },
@@ -68,12 +71,18 @@ const saveEvent = (
         },
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         TableName: process.env.EVENTS_TABLE_NAME!,
-        UpdateExpression: 'SET #rewards = :rewards, #timestamp = :timestamp, #userId = :userId',
-        ExpressionAttributeNames: { '#rewards': 'rewards', '#timestamp': 'timestamp', '#userId': 'userId' },
+        UpdateExpression: 'SET #rewards = :rewards, #timestamp = :timestamp, #userId = :userId, #expires = :expires',
+        ExpressionAttributeNames: {
+            '#rewards': 'rewards',
+            '#timestamp': 'timestamp',
+            '#userId': 'userId',
+            '#expires': 'expires',
+        },
         ExpressionAttributeValues: DynamoDB.Converter.marshall({
             ':rewards': rewards,
             ':timestamp': timestamp,
             ':userId': userId,
+            ':expires': expires,
         }),
     }).promise();
 };
@@ -119,6 +128,14 @@ const ironsourceCallback = async (
         // Log error in cloudwatch
         // eslint-disable-next-line no-console
         console.log(`ERROR: incorrect source ip: ${firstForwardedFor}`);
+        return returnMessage(eventId);
+    }
+
+    // Check timestamp
+    const timestampUnix = moment(timestamp, 'YYYYMMDDHHmm').unix();
+    const expireTime = Math.floor(Date.now() / 1000) - 86400;
+    if (timestampUnix < expireTime) {
+        console.log(`ERROR: expired event: ${timestamp}`);
         return returnMessage(eventId);
     }
 
