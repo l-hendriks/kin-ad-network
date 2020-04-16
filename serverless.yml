@@ -7,6 +7,7 @@ provider:
   name: aws
   runtime: nodejs12.x
   region: eu-central-1
+  logRetentionInDays: 14
   stage: ${opt:stage, 'dev'}
   environment:
     REGION: ${self:provider.region}
