@@ -90,6 +90,35 @@ describe('ironsource callback', () => {
         expect.assertions(2);
     });
 
+    it('should work when the callback contains a querystring', async () => {
+        mockQuery([DynamoDB.Converter.marshall({ callbackUrl: 'http://someurl.com?a=b', clientId: 'testClient', signatureSecret: 'secret' })], undefined);
+        AWS.mock('DynamoDB', 'updateItem', (params: unknown, cb: () => unknown) => {
+            cb();
+        });
+
+        nock('http://someurl.com')
+            .get('/?a=b&eventId=eventId&rewards=10&timestamp=202004110724&userId=userId&signature=2441261fe864c7a8e2dfa484741f05b4c272b917a9a04943cd6d8026052e9d77&custom_wallet=abc123')
+            .reply(200);
+
+        const result = await ironsource({
+            queryStringParameters: {
+                country: '',
+                appKey: 'clientId',
+                eventId: 'eventId',
+                publisherSubId: '',
+                rewards: '10',
+                signature: '6d19a5d0cf1d78b97571d85f64b6675e',
+                timestamp: '202004110724',
+                userId: 'userId',
+                custom_wallet: 'abc123', // eslint-disable-line @typescript-eslint/camelcase
+            },
+            headers: { 'X-Forwarded-For': '79.125.5.179' },
+        });
+
+        expect(result).toEqual({ statusCode: 200, body: 'eventId:OK' });
+        expect.assertions(1);
+    });
+
     it('should save the event and not send success callback when the app has no callback', async () => {
         mockQuery([DynamoDB.Converter.marshall({ clientId: 'testClient', signatureSecret: 'secret' })], undefined);
         AWS.mock('DynamoDB', 'updateItem', (params: unknown, cb: () => unknown) => {
