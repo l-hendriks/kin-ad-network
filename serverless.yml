@@ -5,6 +5,7 @@ plugins:
 
 provider:
   name: aws
+  variableSyntax: \${((env|self|opt|file|cf|s3|ssm|deep)[:\(][ :a-zA-Z0-9'._,\-\/\(\)]*?)}
   runtime: nodejs12.x
   region: eu-central-1
   logRetentionInDays: 14
@@ -26,6 +27,18 @@ provider:
       Principal: "*"
       Action: ["Update:Replace", "Update:Delete"]
       Resource: LogicalResourceId/DynamoDBClientsTable
+    - Effect: Deny
+      Principal: "*"
+      Action: ["Update:Replace", "Update:Delete"]
+      Resource: LogicalResourceId/DynamoDBAppsTable
+    - Effect: Deny
+      Principal: "*"
+      Action: ["Update:Replace", "Update:Delete"]
+      Resource: LogicalResourceId/DynamoDBAppEventsTable
+    - Effect: Deny
+      Principal: "*"
+      Action: ["Update:Replace", "Update:Delete"]
+      Resource: LogicalResourceId/DynamoDBReportsTable
     - Effect: Deny
       Principal: "*"
       Action: ["Update:Replace", "Update:Delete"]
@@ -88,6 +101,140 @@ functions:
 
 resources:
  Resources:
+  DynamoDBAppsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ${self:provider.stage}-apps
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      AttributeDefinitions:
+        - AttributeName: "userId"
+          AttributeType: S
+        # mediationId is an overloaded index
+        # Mediation index is used for identification and reporting:
+        # medationId = type#network#id, with type = reporting|callback
+        # So for example:
+        # userId|mediationId
+        # A     |reporting#ironSource#appId1
+        # A     |callback#ironSource#appId1
+        # A     |reporting#AdMob#appId1
+        # A     |callback#AdMob#adUnit1
+        # A     |callback#AdMob#adUnit2
+        # A     |callback#AdMob#adUnit3
+
+        # Examples:
+        # Callback ironSource:                            query mediationId="callback#ironSource#{appId}"
+        # Callback AdMob:                                 query mediationId="callback#AdMob#{adUnitId}"
+        # Reporting ironSource:                           query mediationId="reporting#ironSource#{appId}"
+        # Reporting AdMob:                                query mediationId="reporting#AdMob#{appId}"
+        # Get all reporting mediation networks from user: query userId={userId} AND begins_with(mediationId, 'reporting')
+        # Get all AdMob callbacks from user:              query userId={userId} AND begins_with(mediationId, 'callback#AdMob')
+        - AttributeName: "mediationId"
+          AttributeType: S
+      KeySchema:
+        - AttributeName: "userId"
+          KeyType: HASH
+        - AttributeName: "mediationId"
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: mediationIndex
+          KeySchema:
+          - AttributeName: mediationId
+            KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      BillingMode: PAY_PER_REQUEST
+
+  DynamoDBAppsTablePolicyUser:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: DynamoDBAppsTablePolicyUser-${self:provider.stage}
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:Query
+            Resource:
+            - { "Fn::Join" : [ "", [ { "Fn::GetAtt": ["DynamoDBAppsTable", "Arn"] }, "*" ] ] }
+            - { "Fn::Join" : [ "", [ { "Fn::GetAtt": ["DynamoDBAppEventsTable", "Arn"] }, "*" ] ] }
+            - { "Fn::Join" : [ "", [ { "Fn::GetAtt": ["DynamoDBReportsTable", "Arn"] }, "*" ] ] }
+            Condition: { "ForAllValues:StringEquals": { "dynamodb:LeadingKeys": [ "${cognito-identity.amazonaws.com:sub}" ] } }
+      Roles:
+        - { "Ref": "UserGroupIdentityRole" }
+
+  DynamoDBAppsTablePolicyAdmin:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: DynamoDBAppsTablePolicyAdmin-${self:provider.stage}
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:Query
+              - dynamodb:UpdateItem
+              - dynamodb:DeleteItem
+            Resource:
+            - { "Fn::Join" : [ "", [ { "Fn::GetAtt": ["DynamoDBAppsTable", "Arn"] }, "*" ] ] }
+            - { "Fn::Join" : [ "", [ { "Fn::GetAtt": ["DynamoDBAppEventsTable", "Arn"] }, "*" ] ] }
+            - { "Fn::Join" : [ "", [ { "Fn::GetAtt": ["DynamoDBReportsTable", "Arn"] }, "*" ] ] }
+      Roles:
+        - { "Ref": "AdminGroupIdentityRole" }
+
+  DynamoDBAppEventsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ${self:provider.stage}-app-events
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      AttributeDefinitions:
+        - AttributeName: "userId"
+          AttributeType: S
+        - AttributeName: "eventId"
+          AttributeType: S
+      KeySchema:
+        - AttributeName: "userId"
+          KeyType: HASH
+        - AttributeName: "eventId"
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+      TimeToLiveSpecification:
+        AttributeName: expires
+        Enabled: true
+
+  DynamoDBReportsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ${self:provider.stage}-app-reports
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      AttributeDefinitions:
+        - AttributeName: "userId"
+          AttributeType: S
+        # dateMedationId is an overloaded index
+        # dateMedationId = date#network#id, with date = YYYYMMDD
+        # So for example:
+        # userId|dateMedationId
+        # A     |20201120#ironSource#appId1
+        # A     |20201121#ironSource#appId1
+        # A     |20201120#AdMob#adUnit1
+
+        # Examples:
+        # Get all reporting some month (to date): query userId={userId} AND begins_width(dateMedationId, '202011')
+        # Get all reporting of some day: query userId={userId} AND begins_width(dateMedationId, '20201120')
+        # Get AdMob reporting information of some day: query userId={userId} AND begins_width(dateMedationId, '20201120#AdMob')
+        # Get AdMob reporting information of a particular AdMob ad unit: query userId={userId} AND begins_width(dateMedationId, '20201120#AdMob#adUnit1')
+        - AttributeName: "dateMedationId"
+          AttributeType: S
+      KeySchema:
+        - AttributeName: "userId"
+          KeyType: HASH
+        - AttributeName: "dateMedationId"
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+
+  ##### OLD TABLES, TO BE REMOVED ONCE THE CODEBASE USES THE NEW TABLE STRUCTURE
   DynamoDBClientsTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -208,7 +355,7 @@ resources:
               "ForAnyValue:StringLike":
                 "cognito-identity.amazonaws.com:amr": "authenticated"
       Policies:
-        - PolicyName: ManagerAdminIdentityPolice-${self:provider.stage}
+        - PolicyName: AdminIdentityPolicy-${self:provider.stage}
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -226,10 +373,33 @@ resources:
                   - 'cognito-identity:*'
                 Resource: '*'
 
+  UserGroupIdentityRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Federated: cognito-identity.amazonaws.com }
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                "cognito-identity.amazonaws.com:aud": { "Ref": "IdentityPool" }
+              "ForAnyValue:StringLike":
+                "cognito-identity.amazonaws.com:amr": "authenticated"
+
   UserPoolAdminGroup:
     Type: "AWS::Cognito::UserPoolGroup"
     Properties:
       GroupName: AdminGroup
       Precedence: 1
       RoleArn:  { "Fn::GetAtt": ["AdminGroupIdentityRole", "Arn"] }
+      UserPoolId: { "Ref": "UserPool" }
+
+  UserPoolUserGroup:
+    Type: "AWS::Cognito::UserPoolGroup"
+    Properties:
+      GroupName: UserGroup
+      Precedence: 1
+      RoleArn:  { "Fn::GetAtt": ["UserGroupIdentityRole", "Arn"] }
       UserPoolId: { "Ref": "UserPool" }
