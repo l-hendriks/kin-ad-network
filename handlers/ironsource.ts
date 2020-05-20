@@ -23,28 +23,28 @@ const VALID_IP = [
 const getClient = async (clientId: string): Promise<Client> => {
     const ddb = new DynamoDB({ region: process.env.REGION });
     const { Items } = await ddb.query({
-        ExpressionAttributeNames: { '#clientId': 'clientId' },
-        ExpressionAttributeValues: { ':clientId': { S: clientId } },
+        ExpressionAttributeNames: { '#dataIdx': 'dataIdx' },
+        ExpressionAttributeValues: { ':dataIdx': { S: `callback#IRONSOURCE#${clientId}` } },
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        TableName: process.env.CLIENT_TABLE_NAME!,
-        KeyConditionExpression: '#clientId = :clientId',
+        TableName: process.env.APPS_TABLE_NAME!,
+        IndexName: 'dataIndex',
+        KeyConditionExpression: '#dataIdx = :dataIdx',
     }).promise();
 
     if (!Items || Items.length === 0) {
         throw Error(`Could not find client with ID: ${clientId}`);
     }
-
     return DynamoDB.Converter.unmarshall(Items[0]) as Client;
 };
 
-const isEventAlreadySent = async (clientId: string, eventId: string): Promise<boolean> => {
+const isEventAlreadySent = async (userId: string, eventId: string): Promise<boolean> => {
     const ddb = new DynamoDB({ region: process.env.REGION });
     const { Items } = await ddb.query({
-        ExpressionAttributeNames: { '#clientId': 'clientId', '#eventId': 'eventId' },
-        ExpressionAttributeValues: { ':clientId': { S: clientId }, ':eventId': { S: eventId } },
+        ExpressionAttributeNames: { '#userId': 'userId', '#eventId': 'eventId' },
+        ExpressionAttributeValues: { ':userId': { S: userId }, ':eventId': { S: eventId } },
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        TableName: process.env.EVENTS_TABLE_NAME!,
-        KeyConditionExpression: '#clientId = :clientId AND #eventId = :eventId',
+        TableName: process.env.APP_EVENTS_TABLE_NAME!,
+        KeyConditionExpression: '#userId = :userId AND #eventId = :eventId',
     }).promise();
 
     if (!Items || Items.length === 0) {
@@ -55,33 +55,33 @@ const isEventAlreadySent = async (clientId: string, eventId: string): Promise<bo
 };
 
 const saveEvent = (
-    clientId: string,
+    userId: string,
     eventId: string,
     rewards: string,
     timestamp: string,
-    userId: string,
+    appUserId: string,
 ): Promise<unknown> => {
     const ddb = new DynamoDB({ region: process.env.REGION });
     const expires = Math.floor(Date.now() / 1000) + 86400; // Expire after a day
 
     return ddb.updateItem({
         Key: {
-            clientId: { S: clientId },
+            userId: { S: userId },
             eventId: { S: eventId },
         },
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        TableName: process.env.EVENTS_TABLE_NAME!,
-        UpdateExpression: 'SET #rewards = :rewards, #timestamp = :timestamp, #userId = :userId, #expires = :expires',
+        TableName: process.env.APP_EVENTS_TABLE_NAME!,
+        UpdateExpression: 'SET #rewards = :rewards, #timestamp = :timestamp, #appUserId = :appUserId, #expires = :expires',
         ExpressionAttributeNames: {
             '#rewards': 'rewards',
             '#timestamp': 'timestamp',
-            '#userId': 'userId',
+            '#appUserId': 'appUserId',
             '#expires': 'expires',
         },
         ExpressionAttributeValues: DynamoDB.Converter.marshall({
             ':rewards': rewards,
             ':timestamp': timestamp,
-            ':userId': userId,
+            ':appUserId': appUserId,
             ':expires': expires,
         }),
     }).promise();
@@ -121,7 +121,6 @@ const ironsourceCallback = async (
         timestamp,
         userId,
     } = event.queryStringParameters;
-
     // CHeck source ip
     const firstForwardedFor = event.headers['X-Forwarded-For'].split(',')[0].trim();
     if (!VALID_IP.includes(firstForwardedFor)) {
@@ -153,20 +152,20 @@ const ironsourceCallback = async (
     if (!checkSignature(timestamp, eventId, userId, rewards, signature)) {
         // Log error in cloudwatch
         // eslint-disable-next-line no-console
-        console.log(`ERROR: Signature did not match for event ${eventId} with client ${clientId}`);
+        console.log(`ERROR: Signature did not match for event ${eventId} with user ${client.userId}`);
         return returnMessage(eventId);
     }
 
     // Check if event was already sent before
-    if (await isEventAlreadySent(clientId, eventId)) {
+    if (await isEventAlreadySent(client.userId, eventId)) {
         // Log error in cloudwatch
         // eslint-disable-next-line no-console
-        console.log(`ERROR: Event already sent for event ${eventId} with client ${clientId}`);
+        console.log(`ERROR: Event already sent for event ${eventId} with user ${client.userId}`);
         return returnMessage(eventId);
     }
 
     // Add to events database for realtime tracking
-    await saveEvent(clientId, eventId, rewards, timestamp, userId);
+    await saveEvent(client.userId, eventId, rewards, timestamp, userId);
 
     // Calculate signature for sending to app
     const returnSignature = createHmac('sha256', client.signatureSecret)

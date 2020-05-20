@@ -5,7 +5,7 @@ plugins:
 
 provider:
   name: aws
-  variableSyntax: \${((env|self|opt|file|cf|s3|ssm|deep)[:\(][ :a-zA-Z0-9'._,\-\/\(\)]*?)}
+  variableSyntax: \${((env|self|opt|file|cf|s3|ssm|deep)[:\(][ ~:a-zA-Z0-9'._,\-\/\(\)]*?)}
   runtime: nodejs12.x
   region: eu-central-1
   logRetentionInDays: 14
@@ -13,6 +13,8 @@ provider:
   stage: ${opt:stage, 'dev'}
   environment:
     REGION: ${self:provider.region}
+    APPS_TABLE_NAME: ${self:provider.stage}-apps
+    APP_EVENTS_TABLE_NAME: ${self:provider.stage}-app-events
     CLIENT_TABLE_NAME: ${self:provider.stage}-clients
     EVENTS_TABLE_NAME: ${self:provider.stage}-events
     INFO_TABLE_NAME: ${self:provider.stage}-info
@@ -27,10 +29,10 @@ provider:
       Principal: "*"
       Action: ["Update:Replace", "Update:Delete"]
       Resource: LogicalResourceId/DynamoDBClientsTable
-    - Effect: Deny
-      Principal: "*"
-      Action: ["Update:Replace", "Update:Delete"]
-      Resource: LogicalResourceId/DynamoDBAppsTable
+    # - Effect: Deny
+    #   Principal: "*"
+    #   Action: ["Update:Replace", "Update:Delete"]
+    #   Resource: LogicalResourceId/DynamoDBAppsTable
     - Effect: Deny
       Principal: "*"
       Action: ["Update:Replace", "Update:Delete"]
@@ -59,12 +61,9 @@ provider:
       - dynamodb:UpdateItem
       Resource:
         - { "Fn::Join" : [ "", [ { "Fn::GetAtt": ["DynamoDBEventsTable", "Arn"] }, "*" ] ] }
-    - Effect: Allow
-      Action:
-      - dynamodb:Query
-      - dynamodb:UpdateItem
-      Resource:
         - { "Fn::Join" : [ "", [ { "Fn::GetAtt": ["DynamoDBInfoTable", "Arn"] }, "*" ] ] }
+        - { "Fn::Join" : [ "", [ { "Fn::GetAtt": ["DynamoDBAppEventsTable", "Arn"] }, "*" ] ] }
+        - { "Fn::Join" : [ "", [ { "Fn::GetAtt": ["DynamoDBAppsTable", "Arn"] }, "*" ] ] }
 
 custom:
   credentials: ${ssm:/aws/reference/secretsmanager/${self:provider.stage}~true}
@@ -88,13 +87,6 @@ functions:
     timeout: 300
     events:
       - schedule: cron(0 18 * * ? *) # Every day at 6:00PM UTC
-  info:
-    handler: handlers/info.default
-    timeout: 30
-    events:
-      - http:
-          path: info
-          method: get
   preSignup:
     handler: handlers/preSignup.default
     timeout: 30
@@ -110,36 +102,38 @@ resources:
       AttributeDefinitions:
         - AttributeName: "userId"
           AttributeType: S
-        # mediationId is an overloaded index
-        # Mediation index is used for identification and reporting:
-        # medationId = type#network#id, with type = reporting|callback
+        # dataIdx is an overloaded index
+        # Data index index is used for identification and reporting:
+        # dataIdx = type#network#id, with type = reporting|callback OR username index, see example
         # So for example:
-        # userId|mediationId
+        # userId|dataIdx
         # A     |reporting#ironSource#appId1
         # A     |callback#ironSource#appId1
         # A     |reporting#AdMob#appId1
         # A     |callback#AdMob#adUnit1
         # A     |callback#AdMob#adUnit2
         # A     |callback#AdMob#adUnit3
+        # A     |username#myAppName
 
         # Examples:
-        # Callback ironSource:                            query mediationId="callback#ironSource#{appId}"
-        # Callback AdMob:                                 query mediationId="callback#AdMob#{adUnitId}"
-        # Reporting ironSource:                           query mediationId="reporting#ironSource#{appId}"
-        # Reporting AdMob:                                query mediationId="reporting#AdMob#{appId}"
-        # Get all reporting mediation networks from user: query userId={userId} AND begins_with(mediationId, 'reporting')
-        # Get all AdMob callbacks from user:              query userId={userId} AND begins_with(mediationId, 'callback#AdMob')
-        - AttributeName: "mediationId"
+        # Callback ironSource:                            query dataIdx="callback#ironSource#{appId}"
+        # Callback AdMob:                                 query dataIdx="callback#AdMob#{adUnitId}"
+        # Reporting ironSource:                           query dataIdx="reporting#ironSource#{appId}"
+        # Reporting AdMob:                                query dataIdx="reporting#AdMob#{appId}"
+        # Get all reporting mediation networks from user: query userId={userId} AND begins_with(dataIdx, 'reporting')
+        # Get all AdMob callbacks from user:              query userId={userId} AND begins_with(dataIdx, 'callback#AdMob')
+        # Get userId from username                        query dataIdx="username#{username}"
+        - AttributeName: "dataIdx"
           AttributeType: S
       KeySchema:
         - AttributeName: "userId"
           KeyType: HASH
-        - AttributeName: "mediationId"
+        - AttributeName: "dataIdx"
           KeyType: RANGE
       GlobalSecondaryIndexes:
-        - IndexName: mediationIndex
+        - IndexName: dataIndex
           KeySchema:
-          - AttributeName: mediationId
+          - AttributeName: dataIdx
             KeyType: HASH
           Projection:
             ProjectionType: ALL

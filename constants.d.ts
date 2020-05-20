@@ -21,7 +21,8 @@ export interface LambdaResponse {
 }
 
 export interface Client {
-    clientId: string;
+    userId: string;
+    dataIdx: string;
     callbackUrl: string;
     secret: string;
     signatureSecret: string;
