@@ -29,10 +29,6 @@ With these measures, even if someone finds out your server callback, they cannot
 same url and they cannot generate new urls because they don't have the secret to generate
 valid signatures.
 
-### Info API
-
-The Info API can be accessed at https://api.kinads.org/info?date=DATE&appKey=APPKEY&secret=YOUR_SECRET.
-
 ## How to run this as a developer
 
 - Clone the script

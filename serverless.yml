@@ -18,11 +18,14 @@ provider:
     CLIENT_TABLE_NAME: ${self:provider.stage}-clients
     EVENTS_TABLE_NAME: ${self:provider.stage}-events
     INFO_TABLE_NAME: ${self:provider.stage}-info
+    REPORTING_TABLE_NAME: ${self:provider.stage}-app-reports
     IRONSOURCE_PRIVATE_KEY: ${self:custom.credentials.IRONSOURCE_PRIVATE_KEY}
     IRONSOURCE_SECRET_KEY: ${self:custom.credentials.IRONSOURCE_SECRET_KEY}
     IRONSOURCE_REFRESH_TOKEN: ${self:custom.credentials.IRONSOURCE_REFRESH_TOKEN}
     GOOGLE_CREDENTIALS_JSON:  ${self:custom.credentials.GOOGLE_CREDENTIALS_JSON}
     GOOGLE_SHEET_ID:  ${self:custom.credentials.GOOGLE_SHEET_ID}
+    KIN_SERVER:  ${self:custom.credentials.KIN_SERVER}
+    KIN_PAYOUT_SECRET:  ${self:custom.credentials.KIN_PAYOUT_SECRET}
   stackPolicy:
     - { Effect: Allow, Principal: "*", Action: "Update:*", Resource: "*"}
     - Effect: Deny
@@ -75,6 +78,13 @@ custom:
     url: "https://dashboard.kinads.org"
 
 functions:
+  payout:
+    handler: handlers/payout.default
+    timeout: 30
+    events:
+      - http:
+          path: payout
+          method: post
   ironsource_callback:
     handler: handlers/ironsource.default
     timeout: 30
@@ -148,6 +158,7 @@ resources:
         Statement:
           - Effect: Allow
             Action:
+              - dynamodb:Scan
               - dynamodb:Query
             Resource:
             - { "Fn::Join" : [ "", [ { "Fn::GetAtt": ["DynamoDBAppsTable", "Arn"] }, "*" ] ] }
@@ -166,6 +177,7 @@ resources:
         Statement:
           - Effect: Allow
             Action:
+              - dynamodb:Scan
               - dynamodb:Query
               - dynamodb:UpdateItem
               - dynamodb:DeleteItem

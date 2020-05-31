@@ -60,7 +60,7 @@ export interface Doc {
     sheetsByIndex: Sheet[];
 }
 
-interface IronSourceReportAppData {
+export interface IronSourceReportAppData {
     revenue: number;
     eCPM: number;
     appFillRate: number;
