@@ -86,7 +86,7 @@ const parseReports = async (
 };
 
 const reporting = async (): Promise<void> => {
-    const date = moment(1590415200000);
+    const date = moment();
     const ironsourceData = await ironsourceReporting(date);
     await parseReports(ironsourceData, date);
 };
