@@ -302,12 +302,20 @@ resources:
       AdminCreateUserConfig:
         AllowAdminCreateUserOnly: true
         InviteMessageTemplate:
-          EmailSubject: "Kin Ad Network Dashboads"
+          EmailSubject: "Kin Ad Network Dashboard"
           EmailMessage: |-
+            Hello, <br /><br />
+            Welcome to Kin Ads! We have created credentials for you to log in to our dashboard. Here, you will be
+            able to see earnings and various other statistics, as well as manage your app's settings.
+            <br /><br />
+            You credentials are:<br />
             Username: {username}<br />
             Password: {####}<br /><br  />
 
-            Dashboard url: <a href="${self:custom.${self:provider.stage}.url}" target="_blank">${self:custom.${self:provider.stage}.url}</a>
+            And you can log in here: <a href="${self:custom.${self:provider.stage}.url}" target="_blank">${self:custom.${self:provider.stage}.url}</a>
+            <br /><br />
+            Kind regards,<br />
+            The KinAds Team
       LambdaConfig:
         PreSignUp: { "Fn::GetAtt": ["PreSignupLambdaFunction", "Arn"] }
       Policies:
