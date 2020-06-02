@@ -67,6 +67,7 @@ provider:
         - { "Fn::Join" : [ "", [ { "Fn::GetAtt": ["DynamoDBInfoTable", "Arn"] }, "*" ] ] }
         - { "Fn::Join" : [ "", [ { "Fn::GetAtt": ["DynamoDBAppEventsTable", "Arn"] }, "*" ] ] }
         - { "Fn::Join" : [ "", [ { "Fn::GetAtt": ["DynamoDBAppsTable", "Arn"] }, "*" ] ] }
+        - { "Fn::Join" : [ "", [ { "Fn::GetAtt": ["DynamoDBReportsTable", "Arn"] }, "*" ] ] }
 
 custom:
   credentials: ${ssm:/aws/reference/secretsmanager/${self:provider.stage}~true}
@@ -96,7 +97,7 @@ functions:
     handler: handlers/reporting.default
     timeout: 300
     events:
-      - schedule: cron(0 18 * * ? *) # Every day at 6:00PM UTC
+      - schedule: cron(0 * * * ? *) # Every hour
   preSignup:
     handler: handlers/preSignup.default
     timeout: 30
