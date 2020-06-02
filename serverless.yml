@@ -31,11 +31,7 @@ provider:
     - Effect: Deny
       Principal: "*"
       Action: ["Update:Replace", "Update:Delete"]
-      Resource: LogicalResourceId/DynamoDBClientsTable
-    # - Effect: Deny
-    #   Principal: "*"
-    #   Action: ["Update:Replace", "Update:Delete"]
-    #   Resource: LogicalResourceId/DynamoDBAppsTable
+      Resource: LogicalResourceId/DynamoDBAppsTable
     - Effect: Deny
       Principal: "*"
       Action: ["Update:Replace", "Update:Delete"]
@@ -44,27 +40,12 @@ provider:
       Principal: "*"
       Action: ["Update:Replace", "Update:Delete"]
       Resource: LogicalResourceId/DynamoDBReportsTable
-    - Effect: Deny
-      Principal: "*"
-      Action: ["Update:Replace", "Update:Delete"]
-      Resource: LogicalResourceId/DynamoDBEventsTable
-    - Effect: Deny
-      Principal: "*"
-      Action: ["Update:Replace", "Update:Delete"]
-      Resource: LogicalResourceId/DynamoDBInfoTable
   iamRoleStatements:
-    - Effect: Allow
-      Action:
-      - dynamodb:Query
-      Resource:
-        - { "Fn::Join" : [ "", [ { "Fn::GetAtt": ["DynamoDBClientsTable", "Arn"] }, "*" ] ] }
     - Effect: Allow
       Action:
       - dynamodb:Query
       - dynamodb:UpdateItem
       Resource:
-        - { "Fn::Join" : [ "", [ { "Fn::GetAtt": ["DynamoDBEventsTable", "Arn"] }, "*" ] ] }
-        - { "Fn::Join" : [ "", [ { "Fn::GetAtt": ["DynamoDBInfoTable", "Arn"] }, "*" ] ] }
         - { "Fn::Join" : [ "", [ { "Fn::GetAtt": ["DynamoDBAppEventsTable", "Arn"] }, "*" ] ] }
         - { "Fn::Join" : [ "", [ { "Fn::GetAtt": ["DynamoDBAppsTable", "Arn"] }, "*" ] ] }
         - { "Fn::Join" : [ "", [ { "Fn::GetAtt": ["DynamoDBReportsTable", "Arn"] }, "*" ] ] }
@@ -238,60 +219,6 @@ resources:
         - AttributeName: "userId"
           KeyType: HASH
         - AttributeName: "dateMedationId"
-          KeyType: RANGE
-      BillingMode: PAY_PER_REQUEST
-
-  ##### OLD TABLES, TO BE REMOVED ONCE THE CODEBASE USES THE NEW TABLE STRUCTURE
-  DynamoDBClientsTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: ${self:provider.stage}-clients
-      PointInTimeRecoverySpecification:
-        PointInTimeRecoveryEnabled: true
-      AttributeDefinitions:
-        - AttributeName: "clientId"
-          AttributeType: S
-      KeySchema:
-        - AttributeName: "clientId"
-          KeyType: HASH
-      BillingMode: PAY_PER_REQUEST
-
-  DynamoDBEventsTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: ${self:provider.stage}-events
-      PointInTimeRecoverySpecification:
-        PointInTimeRecoveryEnabled: true
-      AttributeDefinitions:
-        - AttributeName: "clientId"
-          AttributeType: S
-        - AttributeName: "eventId"
-          AttributeType: S
-      KeySchema:
-        - AttributeName: "clientId"
-          KeyType: HASH
-        - AttributeName: "eventId"
-          KeyType: RANGE
-      BillingMode: PAY_PER_REQUEST
-      TimeToLiveSpecification:
-        AttributeName: expires
-        Enabled: true
-
-  DynamoDBInfoTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: ${self:provider.stage}-info
-      PointInTimeRecoverySpecification:
-        PointInTimeRecoveryEnabled: true
-      AttributeDefinitions:
-        - AttributeName: "clientId"
-          AttributeType: S
-        - AttributeName: "date"
-          AttributeType: S
-      KeySchema:
-        - AttributeName: "clientId"
-          KeyType: HASH
-        - AttributeName: "date"
           KeyType: RANGE
       BillingMode: PAY_PER_REQUEST
 
